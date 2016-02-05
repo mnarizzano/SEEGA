@@ -1,40 +1,132 @@
-### INTRO
+################################################
+INTRODUCTION
+################################################
 DEETO is a 3D slicer[1] module for the automatic segmentation of deep
 intracranial electrode contats. [TODO] more intro
 
-### CONFIGURATION 
+This file has been organized in the following sections:
+1) MODULE CONFIGURATION
+2) HOW TO ADD DEETO IN SLICER
+3) A QUICK INTRODUCTION TO DEETO USE
+4) DIRECTORY STRUCTURE
+5) BIBLIOGRAFY
+
+################################################
+1) MODULE CONFIGURATION 
+################################################
 
 DEETO needs deeto-slicer (deetoS), a simplified (and branch) version of the
-command line tool named deeto[2]. deetoS can be downloaded from [4]
-
+command line tool named deeto[2]. deetoS can be downloaded from [3]
 
 For simplicity we provide different precompiled static versions of
 deetoS that can be found in the directory DEETO/deetoS/.
 
-The module DEETO should run on most of the linux-like platforms. If a
-different platform is used some executable are provided in the
-DEEETO/deetoS/ directory. In order to change platform the
-Config/deeto.config file should be modified by replacing the
-"deetoS/deeto-static-linux64" with the own platform one.  DEETO
-support the following platforms:
+################################################
+1.1) CONFIGURATION UNDER LINUX
+################################################
 
-(i) Ubuntu 64 bits "deetoS/deeto-static-linux64"
-(ii) Windows 64 bits [TODO]
-(iii)Mac OS X 64 bits [TODO]
+DO NOTHING
 
-However if your machine is not listed above you can download the
-sources from https://github.com/mnarizzano/DEETO/tree/deeto-slicer,
-compile it and modify the Config/deeto.config file with the path to
-the executable generated. 
+################################################
+1.2) CONFIGURATION UNDER WINDOWS 64 bits
+################################################
+1) check if the Visual Studio 2015 redistributables components have
+   been installed. If they are not installed, please install them at[4] 
 
-[XXX NOTICE XXX] Please notice that the library used by deetoS on some
-platform could be in conflict with 3Dslicer or python: in this case is
-preferable to compile it statically. However, in this case you should
-first compile the ITK libraries[3] statically. So please follow the
-instruction in the deeto-slicer[4] README file.
+2) Modify the config file under "DEEETO/Config/deeto.config" by
+   replacing the line
+      {"deeto": "DeetoS/deeto-static-linux64"} 
+   with the line
+      {"deeto": "DeetoS/deeto-winx64-static-vs2015.exe"}
+
+3) If there is no deetoS SO version for your system, please download
+   the deetoS sources from[3] and compile it following the README
+   instructions. Once you have created the executable, say it
+   "deeto-exec", then add it to the DEETO/DeetoS/" directory and
+   modify the config file "DEEETO/Config/deeto.config" by replacing
+   the line
+      {"deeto": "DeetoS/deeto-static-linux64"} 
+   with the line
+      {"deeto": "DeetoS/deeto-exec"} (or with the name you give to it.
 
 
-### DIRECTORIES STRUCTURE and files description
+################################################
+2) HOW TO ADD DEETO IN SLICER
+################################################
+
+DEETO has been tested with Slicer 4.5 version under both Linux Ubuntu
+and Windows 8.1 64 bits. The procedure is the same for both windows
+and linux. In order to include DEETO as Slicer module you should:
+
+1) Run Slicer
+2) Under "Edit->Application Settings" select Modules from the left list
+3) In "Additional module paths" select ">>" to show the Frame "Paths"
+4) Push "Add" button and select "SEEGA/DEETO/DEETO.py"
+5) Restart Slicer 
+6) Among Modules you should find DEETO.
+
+################################################
+3) A QUICK INTRODUCTION TO DEETO USE
+################################################
+
+DEETO is divided into two "Collapsible buttons", namely:
+1) DEETO - Configuration
+2) DEETO - Segmentation
+
+################################################
+3.1) DEETO - Configuration
+################################################
+
+Here it is possible to change temporarily the deetoS executable path,
+by using the dialog box "..." . It is an alternative to the 1.2.2
+step, but please notice that this change is temporary, once Slicer is
+restarted it is again setted as in its configuration file.
+
+################################################
+3.2) DEETO - Segmentation
+################################################
+In order to segment a set of contacts DEETO follows this procedure:
+
+1) Add a fiducial files to the scene
+2) Add a CT volume to the scene. WARNING: the volume and the fiducials
+   must be on the same space
+
+3) From the Markups Module choose which electrodes you want to
+   segment, by selecting/unselecting points in the Markups module
+
+4) Go to DEETO Module, then select a fiducial file from the "Fiducial
+   List". Once selected automatically the electrodes that can be
+   segmented appear in the list below the Selection List.  For each
+   electrode you can select which type of the electrode deetoS should
+   look for and the checkbox Tail and Head can be checked. This two
+   flags tells to DEETO that Tail and Head have been carefully choosen
+   (if checked) and DEETO should not look for them. 
+   
+5) Once the Fiducial List has been choosen, the "CT Volume" list also
+   appears, and you should choose a volume to segment.
+
+6) Finally push "Start Segmentation" button to start the segmentation
+
+7) Once deetoS complete the segmentation a new Markups fiducial file
+   named "recon" is created and automatically added to the scene.
+
+8) Refine the Segmentation: it may be the case that some electrodes
+   have not been correctly segmentated. In this case the most big
+   problem should be the search of the tail and/or the head. So if you
+   want to refine the search please select only the electrode of which
+   you want to refine the Segmentation, and of these electrodes checks
+   the Tail and Head check box. Please be warned that:
+
+   a) You should be sure that the entry and target points of each
+      electrodes are placed correctly if Tail and Head are checked
+
+   b) A new fiducial with the selected electrodes segmented is created
+      with the same name of the previous one.
+
+################################################
+4) DIRECTORY STRUCTURE
+################################################
+
 
 - /. is <home> 
 - <home>/README.md : this file
@@ -47,7 +139,15 @@ instruction in the deeto-slicer[4] README file.
 
 
 
+################################################
+5) BIBLIOGRAFY
+################################################
+
 [1] cite 3Dslicer 
+
 [2] https://github.com/mnarizzano/DEETO
-[3] http://www.itk.org/ITK/resources/software.html
-[4] https://github.com/mnarizzano/DEETO/tree/deeto-slicer
+
+[3] https://github.com/mnarizzano/DEETO/tree/deeto-slicer
+
+[4] https://www.microsoft.com/it-it/download/details.aspx?id=48145
+    (4/Feb/2016 last checked)

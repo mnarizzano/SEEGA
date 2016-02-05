@@ -75,7 +75,7 @@ class DEETOWidget(ScriptedLoadableModuleWidget):
   def configurationSetup(self):
     #### Create a Collapsible Button
     self.setupCB = ctk.ctkCollapsibleButton()
-    self.setupCB.text = "Configuration"
+    self.setupCB.text = "DEETO - Configuration"
     self.setupCB.collapsed = True
     self.layout.addWidget(self.setupCB)
     
@@ -259,6 +259,7 @@ class DEETOWidget(ScriptedLoadableModuleWidget):
     fileName = qt.QFileDialog.getOpenFileName(self.deetoFD, \
                                               "Choose surf directory", "~", "")
     self.deetoLE.setText(fileName)
+    slicer.modules.DEETOInstance.deetoExecutablePath = fileName
 
 #######################################################################################
 ### on Start Segmentation, by reading 
