@@ -6,9 +6,13 @@ intracranial electrode contats. [TODO] more intro
 
 This file has been organized in the following sections:
 1) MODULE CONFIGURATION
+
 2) HOW TO ADD DEETO IN SLICER
+
 3) A QUICK INTRODUCTION TO DEETO USE
+
 4) DIRECTORY STRUCTURE
+
 5) BIBLIOGRAFY
 
 ################################################
@@ -59,10 +63,15 @@ and Windows 8.1 64 bits. The procedure is the same for both windows
 and linux. In order to include DEETO as Slicer module you should:
 
 1) Run Slicer
+
 2) Under "Edit->Application Settings" select Modules from the left list
+
 3) In "Additional module paths" select ">>" to show the Frame "Paths"
+
 4) Push "Add" button and select "SEEGA/DEETO/DEETO.py"
+
 5) Restart Slicer 
+
 6) Among Modules you should find DEETO.
 
 ################################################
@@ -70,7 +79,9 @@ and linux. In order to include DEETO as Slicer module you should:
 ################################################
 
 DEETO is divided into two "Collapsible buttons", namely:
+
 1) DEETO - Configuration
+
 2) DEETO - Segmentation
 
 ################################################
@@ -88,6 +99,7 @@ restarted it is again setted as in its configuration file.
 In order to segment a set of contacts DEETO follows this procedure:
 
 1) Add a fiducial files to the scene
+
 2) Add a CT volume to the scene. WARNING: the volume and the fiducials
    must be on the same space
 
@@ -143,7 +155,7 @@ In order to segment a set of contacts DEETO follows this procedure:
 5) BIBLIOGRAFY
 ################################################
 
-[1] cite 3Dslicer 
+[1] http://www.slicer.org
 
 [2] https://github.com/mnarizzano/DEETO
 
