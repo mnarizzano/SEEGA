@@ -12,6 +12,7 @@ import numpy
 import re
 import collections
 import json
+import math
 
 """Uses ScriptedLoadableModule base class, available at:
 https://github.com/Slicer/Slicer/blob/master/Base/Python/slicer/ScriptedLoadableModule.py
@@ -361,12 +362,40 @@ class DEETOLogic(ScriptedLoadableModuleLogic):
       # It Looks a problem of returning code from deetoS
       points = subprocess.Popen(cmdLine,stdout=subprocess.PIPE).communicate()[0].splitlines()
       print points
+
       ### For each of the point returned by deeto we add it to the new markup fiducial
       name = elList[i].name.text
       for p in range(0,(len(points) - 1),3):
         a = fidNode.AddFiducial(float(points[p]),float(points[p+1]),float(points[p+2]))
         fidNode.SetNthFiducialLabel(a, name + str((p/3) + 1))
 
+      ### For each electrode we create a line from the start point to the last + 3mm
+      ### Look for two points p1 and p3 starting from p1 and p2 (first and last point segmented
+      last = len(points) - 1
+      p1 = [float(points[0]), float(points[1]), float(points[2])]
+      p2 = [float(points[last - 2]), float(points[last-1]), float(points[last])]
+      delta = math.sqrt(math.pow((p1[0] - p2[0]),2) + math.pow((p1[1] - p2[1]),2) + math.pow((p1[2] - p2[2]),2)) 
+      p3 = [0.0,0.0,0.0]
+      p3[0] = p2[0] + (p2[0] - p1[0]) / delta * 3 # distance 3mm
+      p3[1] = p2[1] + (p2[1] - p1[1]) / delta * 3 # distance 3mm
+      p3[2] = p2[2] + (p2[2] - p1[2]) / delta * 3 # distance 3mm
+      ### Create a vtk line
+      lineSource = vtk.vtkLineSource()
+      lineSource.SetPoint1(p1)
+      lineSource.SetPoint2(p3)
+      lineSource.SetResolution(100) ## why?
+      lineSource.Update()
+      ### Create a model of the line to add to the scene
+      model = slicer.vtkMRMLModelNode()
+      model.SetName(name + "_direction")
+      model.SetAndObservePolyData(lineSource.GetOutput())
+      modelDisplay = slicer.vtkMRMLModelDisplayNode()
+      modelDisplay.SetSliceIntersectionVisibility(True) # Hide in slice view
+      modelDisplay.SetVisibility(True) # Show in 3D view
+      modelDisplay.SetColor(1,0,0)
+      slicer.mrmlScene.AddNode(modelDisplay)
+      model.SetAndObserveDisplayNodeID(modelDisplay.GetID())
+      slicer.mrmlScene.AddNode(model)
 
 #######################################################################################
 ### saveNode
