@@ -146,7 +146,7 @@ TODO
 ### 5 DIRECTORY STRUCTURE
 ################################################
 
-- <home> refers to the place where you put DEETO directory
+- \<home\> refers to the place where you put DEETO directory
 - <home>/README.md : this file
 - <home>/DEETO.py, : python script for 3D-SLICER
 - <home>/DEETO.pyc ... ?
@@ -162,7 +162,10 @@ TODO
 ################################################
 
 [1] http://www.slicer.org
+
 [2] https://github.com/mnarizzano/DEETO
+
 [3] https://github.com/mnarizzano/DEETO/tree/deeto-slicer
+
 [4] https://www.microsoft.com/it-it/download/details.aspx?id=48145
     (4/Feb/2016 last checked)
