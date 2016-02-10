@@ -147,13 +147,13 @@ TODO
 ################################################
 
 - \<home\> refers to the place where you put DEETO directory
-- <home>/README.md : this file
-- <home>/DEETO.py, : python script for 3D-SLICER
-- <home>/DEETO.pyc ... ?
-- <home>/Config/   : contains configuration files used by the DEETO.py (deeto.config, electrodes.config)
-- <home>/DeetoS/   : contains the deeto-slicer static executables 
-- <home>/Testing/  : ... ?
-- <home>/Tmp/      : it may contains some temporary files used by deeto.   
+- \<home\>/README.md : this file
+- \<home\>/DEETO.py, : python script for 3D-SLICER
+- \<home\>/DEETO.pyc ... ?
+- \<home\>/Config/   : contains configuration files used by the DEETO.py (deeto.config, electrodes.config)
+- \<home\>/DeetoS/   : contains the deeto-slicer static executables 
+- \<home\>/Testing/  : ... ?
+- \<home\>/Tmp/      : it may contains some temporary files used by deeto.   
 
 
 
