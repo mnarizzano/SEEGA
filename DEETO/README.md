@@ -6,18 +6,14 @@ intracranial electrode contats. [TODO] more intro
 
 This file has been organized in the following sections:
 
-1) MODULE CONFIGURATION
-
-2) HOW TO ADD DEETO IN SLICER
-
-3) A QUICK INTRODUCTION TO DEETO USE
-
-4) DIRECTORY STRUCTURE
-
-5) BIBLIOGRAFY
+1. MODULE CONFIGURATION
+2. HOW TO ADD DEETO IN SLICER
+3. A QUICK INTRODUCTION TO DEETO USE
+4. DIRECTORY STRUCTURE
+5. BIBLIOGRAFY
 
 ################################################
-### 1) MODULE CONFIGURATION 
+### 1 MODULE CONFIGURATION 
 ################################################
 
 DEETO needs deeto-slicer (deetoS), a simplified (and branch) version of the
@@ -27,24 +23,22 @@ For simplicity we provide different precompiled static versions of
 deetoS that can be found in the directory DEETO/deetoS/.
 
 ################################################
-#### 1.1) CONFIGURATION UNDER LINUX
+#### 1.1 CONFIGURATION UNDER LINUX
 ################################################
 
 DO NOTHING
 
 ################################################
-#### 1.2) CONFIGURATION UNDER WINDOWS 64 bits
+#### 1.2 CONFIGURATION UNDER WINDOWS 64 bits
 ################################################
-1) check if the Visual Studio 2015 redistributables components have
+1. check if the Visual Studio 2015 redistributables components have
    been installed. If they are not installed, please install them at[4] 
-
-2) Modify the config file under "DEEETO/Config/deeto.config" by
+2. Modify the config file under "DEEETO/Config/deeto.config" by
    replacing the line
       {"deeto": "DeetoS/deeto-static-linux64"} 
    with the line
       {"deeto": "DeetoS/deeto-winx64-static-vs2015.exe"}
-
-3) If there is no deetoS SO version for your system, please download
+3. If there is no deetoS SO version for your system, please download
    the deetoS sources from[3] and compile it following the README
    instructions. Once you have created the executable, say it
    "deeto-exec", then add it to the DEETO/DeetoS/" directory and
@@ -56,7 +50,7 @@ DO NOTHING
 
 
 ################################################
-### 2) HOW TO ADD DEETO IN SLICER
+### 2 HOW TO ADD DEETO IN SLICER
 ################################################
 
 DEETO has been tested with Slicer 4.5 version under both Linux Ubuntu
@@ -64,15 +58,10 @@ and Windows 8.1 64 bits. The procedure is the same for both windows
 and linux. In order to include DEETO as Slicer module you should:
 
 1. Run Slicer
-
 2. Under "Edit->Application Settings" select Modules from the left list
-
 3. In "Additional module paths" select ">>" to show the Frame "Paths"
-
 4. Push "Add" button and select "SEEGA/DEETO/DEETO.py"
-
 5. Restart Slicer 
-
 6. Among Modules you should find DEETO.
 
 ################################################
