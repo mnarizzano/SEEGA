@@ -70,6 +70,7 @@ and Linux. In order to include DEETO as Slicer module you should:
 ################################################
 
 DEETO is divided into two "Collapsible buttons", namely:
+
 1. DEETO - Configuration
 2. DEETO - Segmentation
 
