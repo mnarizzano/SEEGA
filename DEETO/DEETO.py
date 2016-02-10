@@ -317,14 +317,20 @@ class DEETOLogic(ScriptedLoadableModuleLogic):
 ### runSegmentation
 #######################################################################################
   def runSegmentation(self,elList,volume,parentPath,deetoExe,models):
+    ### CHECK that both the fiducials and ct volume have been selected
     if (len(elList) == 0):
       # notify error
       slicer.util.showStatusMessage("Error, no electrode list selected")
       return
+    if ( volume == None):
+      # notify error
+      slicer.util.showStatusMessage("Error, no volume selected")
+      return
       
-    ####  1) CREATE A NEW FIDUCIAL LIST CALLED ...... [TODO]
+    ### CREATE A NEW FIDUCIAL LIST CALLED ...... [TODO]
     mlogic = slicer.modules.markups.logic()   
-    
+   
+    ### 
     ### [TODO] Accrocchio, non so come cambiare questi parametri solo
     ### per il nodo corrente, invece che di default
     mlogic.SetDefaultMarkupsDisplayNodeTextScale(1.3)
@@ -352,9 +358,10 @@ class DEETOLogic(ScriptedLoadableModuleLogic):
       print cmdLine
       # RUN the command line cmdLine. 
       # [NOTE] : I have used Popen since subprocess.check_output wont work at the moment
+      # It Looks a problem of returning code from deetoS
       points = subprocess.Popen(cmdLine,stdout=subprocess.PIPE).communicate()[0].splitlines()
       print points
-      #### 6) For each of the point returned by deeto we add it to the new markup fiducial
+      ### For each of the point returned by deeto we add it to the new markup fiducial
       name = elList[i].name.text
       for p in range(0,(len(points) - 1),3):
         a = fidNode.AddFiducial(float(points[p]),float(points[p+1]),float(points[p+2]))
