@@ -1,5 +1,5 @@
 ################################################
-INTRODUCTION
+### INTRODUCTION
 ################################################
 DEETO is a 3D slicer[1] module for the automatic segmentation of deep
 intracranial electrode contats. [TODO] more intro
@@ -17,7 +17,7 @@ This file has been organized in the following sections:
 5) BIBLIOGRAFY
 
 ################################################
-1) MODULE CONFIGURATION 
+### 1) MODULE CONFIGURATION 
 ################################################
 
 DEETO needs deeto-slicer (deetoS), a simplified (and branch) version of the
