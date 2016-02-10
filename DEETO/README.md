@@ -63,17 +63,17 @@ DEETO has been tested with Slicer 4.5 version under both Linux Ubuntu
 and Windows 8.1 64 bits. The procedure is the same for both windows
 and linux. In order to include DEETO as Slicer module you should:
 
-1) Run Slicer
+1. Run Slicer
 
-2) Under "Edit->Application Settings" select Modules from the left list
+2. Under "Edit->Application Settings" select Modules from the left list
 
-3) In "Additional module paths" select ">>" to show the Frame "Paths"
+3. In "Additional module paths" select ">>" to show the Frame "Paths"
 
-4) Push "Add" button and select "SEEGA/DEETO/DEETO.py"
+4. Push "Add" button and select "SEEGA/DEETO/DEETO.py"
 
-5) Restart Slicer 
+5. Restart Slicer 
 
-6) Among Modules you should find DEETO.
+6. Among Modules you should find DEETO.
 
 ################################################
 ### 3) A QUICK INTRODUCTION TO DEETO USE
