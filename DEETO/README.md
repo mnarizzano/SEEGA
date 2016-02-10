@@ -27,13 +27,13 @@ For simplicity we provide different precompiled static versions of
 deetoS that can be found in the directory DEETO/deetoS/.
 
 ################################################
-1.1) CONFIGURATION UNDER LINUX
+#### 1.1) CONFIGURATION UNDER LINUX
 ################################################
 
 DO NOTHING
 
 ################################################
-1.2) CONFIGURATION UNDER WINDOWS 64 bits
+#### 1.2) CONFIGURATION UNDER WINDOWS 64 bits
 ################################################
 1) check if the Visual Studio 2015 redistributables components have
    been installed. If they are not installed, please install them at[4] 
@@ -56,7 +56,7 @@ DO NOTHING
 
 
 ################################################
-2) HOW TO ADD DEETO IN SLICER
+### 2) HOW TO ADD DEETO IN SLICER
 ################################################
 
 DEETO has been tested with Slicer 4.5 version under both Linux Ubuntu
@@ -76,7 +76,7 @@ and linux. In order to include DEETO as Slicer module you should:
 6) Among Modules you should find DEETO.
 
 ################################################
-3) A QUICK INTRODUCTION TO DEETO USE
+### 3) A QUICK INTRODUCTION TO DEETO USE
 ################################################
 
 DEETO is divided into two "Collapsible buttons", namely:
@@ -86,7 +86,7 @@ DEETO is divided into two "Collapsible buttons", namely:
 2) DEETO - Segmentation
 
 ################################################
-3.1) DEETO - Configuration
+#### 3.1) DEETO - Configuration
 ################################################
 
 Here it is possible to change temporarily the deetoS executable path,
@@ -95,7 +95,7 @@ step, but please notice that this change is temporary, once Slicer is
 restarted it is again setted as in its configuration file.
 
 ################################################
-3.2) DEETO - Segmentation
+#### 3.2) DEETO - Segmentation
 ################################################
 In order to segment a set of contacts DEETO follows this procedure:
 
