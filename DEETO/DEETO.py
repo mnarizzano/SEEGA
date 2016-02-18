@@ -393,6 +393,7 @@ class DEETOLogic(ScriptedLoadableModuleLogic):
       modelDisplay.SetSliceIntersectionVisibility(True) # Hide in slice view
       modelDisplay.SetVisibility(True) # Show in 3D view
       modelDisplay.SetColor(1,0,0)
+      modelDisplay.SetLineWidth(2)
       slicer.mrmlScene.AddNode(modelDisplay)
       model.SetAndObserveDisplayNodeID(modelDisplay.GetID())
       slicer.mrmlScene.AddNode(model)
