@@ -266,13 +266,14 @@ class DEETOWidget(ScriptedLoadableModuleWidget):
 ### on Start Segmentation, by reading 
 #######################################################################################
   def onstartSegmentationPB(self):
+    slicer.util.showStatusMessage("START SEGMENTATION")
     print "RUN SEGMENTATION ALGORITHM "
     DEETOLogic().runSegmentation(self.electrodeList,self.ctVolumeCB.currentNode(),\
                                  slicer.modules.DEETOInstance.parentPath,\
                                  slicer.modules.DEETOInstance.deetoExecutablePath,\
                                  self.models)
     print "END RUN SEGMENTATION ALGORITHM "
-
+    slicer.util.showStatusMessage("END SEGMENTATION")
 #######################################################################################
 ### clearTable
 #######################################################################################
@@ -314,6 +315,10 @@ class DEETOWidget(ScriptedLoadableModuleWidget):
 #########################################################################################
 class DEETOLogic(ScriptedLoadableModuleLogic):
 
+  def __init__(self):
+    # Create a Progress Bar
+    self.pb = qt.QProgressBar()
+        
 #######################################################################################
 ### runSegmentation
 #######################################################################################
@@ -327,7 +332,18 @@ class DEETOLogic(ScriptedLoadableModuleLogic):
       # notify error
       slicer.util.showStatusMessage("Error, no volume selected")
       return
-      
+
+    ### COMPUTE THE THRESHOLD the 45% of points not null(0.0)  
+    im = volume.GetImageData()
+    # linearize the 3D image in a vector
+    vector = vtk.util.numpy_support.vtk_to_numpy(im.GetPointData().GetScalars())
+    # eliminate 0.0 value from the vector
+    n_vector = vector[vector != 0]
+    # sort the intensity values
+    n_vector.sort()
+    # compute the threshold as the 45% of points not null
+    threshold = n_vector[int(n_vector.size * 0.45)]
+    
     ### CREATE A NEW FIDUCIAL LIST CALLED ...... [TODO]
     mlogic = slicer.modules.markups.logic()   
    
@@ -344,24 +360,31 @@ class DEETOLogic(ScriptedLoadableModuleLogic):
     # Save the volume as has been modified
     self.tmpVolumeFile = parentPath + "/Tmp/tmp.nii.gz"
     self.saveNode(volume,self.tmpVolumeFile)
+
+    # Set the parameters of the progess bar and show it 
+    self.pb.setRange(0,len(elList))
+    self.pb.show()
+    self.pb.setValue(0)
+    slicer.app.processEvents()
+
     # For each electrode "e":
     for i in xrange(len(elList)):
       tFlag = "-l" if (elList[i].tailCheckBox.isChecked() == True) else "-t"
       hFlag = "-h" if (elList[i].headCheckBox.isChecked() == True) else "-e"
       
       # Construct the cmdLine to run the segmentation on "e"
-      cmdLine = [str(deetoExe),'-ct',str(self.tmpVolumeFile),\
+      cmdLine = [str(deetoExe),'-s',str(threshold),'-ct',str(self.tmpVolumeFile),\
                  hFlag, str(-1*elList[i].entry[0]), str(-1*elList[i].entry[1]), \
                  str(elList[i].entry[2]), tFlag ,\
                  str(-1*elList[i].target[0]),str(-1*elList[i].target[1]),\
                  str(elList[i].target[2]),'-m'] +\
         map(str,models[elList[i].model.currentText])
-      print cmdLine
+      # print cmdLine
       # RUN the command line cmdLine. 
       # [NOTE] : I have used Popen since subprocess.check_output wont work at the moment
       # It Looks a problem of returning code from deetoS
       points = subprocess.Popen(cmdLine,stdout=subprocess.PIPE).communicate()[0].splitlines()
-      print points
+      # print points
 
       ### For each of the point returned by deeto we add it to the new markup fiducial
       name = elList[i].name.text
@@ -397,7 +420,12 @@ class DEETOLogic(ScriptedLoadableModuleLogic):
       slicer.mrmlScene.AddNode(modelDisplay)
       model.SetAndObserveDisplayNodeID(modelDisplay.GetID())
       slicer.mrmlScene.AddNode(model)
+      
+      # update progress bar
+      self.pb.setValue(i+1)
+      slicer.app.processEvents()
 
+    self.pb.hide()
 #######################################################################################
 ### saveNode
 #######################################################################################
