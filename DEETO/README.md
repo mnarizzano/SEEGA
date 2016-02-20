@@ -44,7 +44,7 @@ DO NOTHING
    the line
       {"deeto": "DeetoS/deeto-static-linux64"} 
    with the line
-      {"deeto": "DeetoS/deeto-exec"} (or with the name you give to it.
+      {"deeto": "DeetoS/deeto-winx64-static-vs2015.exe"} (or with the name you give to it.
 
 ################################################
 #### 1.3 CONFIGURATION UNDER MAC OX	
