@@ -1,0 +1,41 @@
+
+
+cyl = vtk.vtkCylinderSource()
+cyl.SetCenter(X,Y,Z)
+cyl.SetRadius(0.2)
+cyl.SetHeight(10.0) // QUA bisogna mettere la lunghezza opportuna
+cyl.SetResolution(30)
+cyl.Update()
+# Create model node and add to scene
+model = slicer.vtkMRMLModelNode()
+model.SetAndObservePolyData(cyl.GetOutput())
+modelDisplay = slicer.vtkMRMLModelDisplayNode()
+modelDisplay.SetSliceIntersectionVisibility(False) # Hide in slice view
+modelDisplay.SetVisibility(True) # Show in 3D view
+slicer.mrmlScene.AddNode(modelDisplay)
+model.SetAndObserveDisplayNodeID(modelDisplay.GetID())
+slicer.mrmlScene.AddNode(model) 
+
+
+lineSource = vtk.vtkLineSource()
+lineSource.SetPoint1(1, 0, 0)
+lineSource.SetPoint2(0, 1, 0)
+lineSource.SetResolution(100)
+
+lineSource.Update()
+model = slicer.vtkMRMLModelNode()
+model.SetName("")
+model.SetAndObservePolyData(lineSource.GetOutput())
+modelDisplay = slicer.vtkMRMLModelDisplayNode()
+modelDisplay.SetSliceIntersectionVisibility(False) # Hide in slice view
+modelDisplay.SetVisibility(True) # Show in 3D view
+slicer.mrmlScene.AddNode(modelDisplay)
+model.SetAndObserveDisplayNodeID(modelDisplay.GetID())
+slicer.mrmlScene.AddNode(model) 
+ 
+n5 = getNode("r_oarm_seeg_cleaned.nii_5") # vtkMRMLScalarVolumeNode
+id5 = n5.GetImageData() # vtkImageData
+id5.GetOrigin()
+n5.GetOrigin()
+id5.GetCenter()
+
