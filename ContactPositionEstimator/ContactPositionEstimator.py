@@ -467,6 +467,7 @@ class Electrode():
     self.row = qt.QGroupBox(configurationCB)
     self.hlayout = qt.QHBoxLayout(self.row)
     self.hlayout.setMargin(1)
+
     #### Crea a new label
     self.name = qt.QLabel(name,self.row)
     self.name.setMaximumWidth(hsize[0])
@@ -475,18 +476,22 @@ class Electrode():
 
     #### Set the model list combo box
     self.model = qt.QComboBox(self.row)
-    for k in models.keys():
-      self.model.addItem(k)
+    self.keys = models.keys()
+    self.keys.sort(reverse=True)
+    self.model.addItems(self.keys)
+
     self.model.setMaximumWidth(hsize[1])
     self.model.setMaximumHeight(20)
     self.model.setStyleSheet("qproperty-alignment: AlignCenter;")
     self.hlayout.addWidget(self.model)
+
     #### Tail Check Box
     self.tailCheckBox = qt.QCheckBox(self.row)
     self.tailCheckBox.setMaximumWidth(hsize[2])
     self.tailCheckBox.setMaximumHeight(20)
     self.tailCheckBox.setStyleSheet("qproperty-alignment: AlignCenter;")
     self.hlayout.addWidget(self.tailCheckBox)
+
     ### Head CheckBox
     self.headCheckBox = qt.QCheckBox(self.row)
     self.headCheckBox.setMaximumWidth(hsize[3])
