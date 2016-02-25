@@ -1,3 +1,3 @@
 # SEEGA
 SEEG Assistant 
-![My image](mnarizzano.github.com/SEEGA/SEEG_Assistant.png)
+![alt tag](https://raw.githubusercontent.com/mnarizzano/SEEGA/master/SEEG_Assistant.png)
