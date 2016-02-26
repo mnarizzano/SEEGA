@@ -19,7 +19,7 @@ https://github.com/Slicer/Slicer/blob/master/Base/Python/slicer/ScriptedLoadable
 """
 #########################################################################################
 ####                                                                                 ####
-####  ContactPositionEstimator ##########################################################
+####  Contact Position Estimator ########################################################
 ####                                                                                 ####
 #########################################################################################
 class ContactPositionEstimator(ScriptedLoadableModule):
@@ -29,7 +29,7 @@ class ContactPositionEstimator(ScriptedLoadableModule):
 #########################################################################################
   def __init__(self, parent):
     ScriptedLoadableModule.__init__(self, parent)
-    self.parent.title = "ContactPositionEstimator" # TODO make this more human readable by adding spaces
+    self.parent.title = "Contact Position Estimator"
     self.parent.categories = ["SEEGA"]
     self.parent.dependencies = []
     self.parent.contributors = ["G. Arnulfo (Univ. Genoa) & M. Narizzano (Univ. Genoa)"]
