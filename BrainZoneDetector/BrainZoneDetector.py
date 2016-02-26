@@ -149,45 +149,49 @@ class BrainZoneDetectorLogic(ScriptedLoadableModuleLogic):
       # update progress bar
       self.pb.setValue(i+1)
       slicer.app.processEvents()
+      # Only for Active Fiducial points the GMPI is computed
+      if fids.GetNthFiducialSelected(i) == True:
 
-      # istantiate the variable which holds the point
-      currContactCentroid = [0,0,0]      
-      # copy current position from FiducialList
-      fids.GetNthFiducialPosition(i,currContactCentroid)
 
-      # append 1 at the end of array before applying transform
-      currContactCentroid.append(1)
+        # istantiate the variable which holds the point
+        currContactCentroid = [0,0,0]      
+        # copy current position from FiducialList
+        fids.GetNthFiducialPosition(i,currContactCentroid)
 
-      # transform from RAS to IJK
-      voxIdx = ras2vox_atlas.MultiplyFloatPoint(currContactCentroid)
-      voxIdx = numpy.round(numpy.array(voxIdx[:3])).astype(int)
+        # append 1 at the end of array before applying transform
+        currContactCentroid.append(1)
+
+        # transform from RAS to IJK
+        voxIdx = ras2vox_atlas.MultiplyFloatPoint(currContactCentroid)
+        voxIdx = numpy.round(numpy.array(voxIdx[:3])).astype(int)
       
-      # build a -3:3 linear mask
-      mask = numpy.arange(-3,4)
-
-      # get Patch Values from loaded Atlas in a 7x7x7 region around
-      # contact centroid and extract the frequency for each unique
-      # patch Value present in the region
-      patchValues = atlas[numpy.ix_(mask+voxIdx[2],\
-                                    mask+voxIdx[1],\
-                                    mask+voxIdx[0])]
-      # Find the unique values on the matrix above
-      uniqueValues = numpy.unique(patchValues)
-
-      # Flatten the patch value and create a tuple
-      patchValues = tuple(patchValues.flatten(1))
-      # Create an array of frequency for each unique value
-      itemfreq = [patchValues.count(x) for x in uniqueValues]
-      # Compute the max frequency
-      totPercentage = numpy.sum(itemfreq)
-      # Recover the real patch names
-      patchNames = [FSLUT[pValues] for pValues in uniqueValues]
-      # Create the zones
-      parcels = dict(zip(itemfreq,patchNames))
-      print parcels
-      #[TODO] COSA FA QUI???
-      anatomicalPositionsString = [','.join([v,str( round( float(k) / totPercentage * 100 ))])\
-                                   for k,v in parcels.iteritems()]
-      #      print ','.join(anatomicalPositionsString)
-      fids.SetNthMarkupDescription(i,','.join(anatomicalPositionsString))
+        # build a -3:3 linear mask
+        mask = numpy.arange(-3,4)
+        
+        # get Patch Values from loaded Atlas in a 7x7x7 region around
+        # contact centroid and extract the frequency for each unique
+        # patch Value present in the region
+        patchValues = atlas[numpy.ix_(mask+voxIdx[2],\
+                                      mask+voxIdx[1],\
+                                      mask+voxIdx[0])]
+        # Find the unique values on the matrix above
+        uniqueValues = numpy.unique(patchValues)
+        
+        # Flatten the patch value and create a tuple
+        patchValues = tuple(patchValues.flatten(1))
+        # Create an array of frequency for each unique value
+        itemfreq = [patchValues.count(x) for x in uniqueValues]
+        # Compute the max frequency
+        totPercentage = numpy.sum(itemfreq)
+        # Recover the real patch names
+        patchNames = [FSLUT[pValues] for pValues in uniqueValues]
+        # Create the zones
+        parcels = dict(zip(itemfreq,patchNames))
+        #print parcels
+        #[TODO] COSA FA QUI???
+        anatomicalPositionsString = [','.join([v,str( round( float(k) / totPercentage * 100 ))])\
+                                     for k,v in parcels.iteritems()]
+        # Preserve if some old description was already there
+        fids.SetNthMarkupDescription(i,fids.GetNthMarkupDescription(i) + \
+                                     " " + ','.join(anatomicalPositionsString))
 
