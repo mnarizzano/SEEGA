@@ -19,7 +19,7 @@ https://github.com/Slicer/Slicer/blob/master/Base/Python/slicer/ScriptedLoadable
 """
 #########################################################################################
 ####                                                                                 ####
-####  ContactPositionEstimator #############################################################################
+####  ContactPositionEstimator ##########################################################
 ####                                                                                 ####
 #########################################################################################
 class ContactPositionEstimator(ScriptedLoadableModule):
@@ -54,7 +54,7 @@ class ContactPositionEstimator(ScriptedLoadableModule):
 
 #########################################################################################
 ####                                                                                 ####
-####  ContactPositionEstimatorWidget #######################################################################
+####  ContactPositionEstimatorWidget  ###################################################
 ####                                                                                 ####
 #########################################################################################
 class ContactPositionEstimatorWidget(ScriptedLoadableModuleWidget):

@@ -109,10 +109,11 @@ class BrainZoneDetectorWidget(ScriptedLoadableModuleWidget):
     pass
 
 
-#
-# Zone DetectorLogic
-#
-
+#########################################################################################
+####                                                                                 ####
+#### BrainZoneDetectorLogic #############################################################
+####                                                                                 ####
+#########################################################################################
 class BrainZoneDetectorLogic(ScriptedLoadableModuleLogic):
   """
   """
