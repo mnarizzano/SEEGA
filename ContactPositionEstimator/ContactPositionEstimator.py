@@ -54,7 +54,7 @@ class ContactPositionEstimator(ScriptedLoadableModule):
 
 #########################################################################################
 ####                                                                                 ####
-####  ContactPositionEstimatorWidget  ###################################################
+####  ContactPositionEstimatorWidget                                                 ####
 ####                                                                                 ####
 #########################################################################################
 class ContactPositionEstimatorWidget(ScriptedLoadableModuleWidget):
@@ -124,7 +124,7 @@ class ContactPositionEstimatorWidget(ScriptedLoadableModuleWidget):
     self.segmentationFL  = qt.QFormLayout(self.segmentationCB)
 
     #### Choose Fiducial - Section
-    #### Select box a tendina ComboBox -- 
+    #### Select box ComboBox - 
     self.fiducialCBox = slicer.qMRMLNodeComboBox()
     self.fiducialCBox.nodeTypes = ( ("vtkMRMLMarkupsFiducialNode"), "" )
     self.fiducialCBox.selectNodeUponCreation = False
@@ -159,6 +159,8 @@ class ContactPositionEstimatorWidget(ScriptedLoadableModuleWidget):
     self.segmentationFL.addRow("",self.captionGB)
     self.electrodeList = [] 
 
+
+
 #######################################################################################
 ###  onfiducialCBox   #
 ###  Create dynamically the electrode table, by reading the fiducial list selected, by 
@@ -171,6 +173,7 @@ class ContactPositionEstimatorWidget(ScriptedLoadableModuleWidget):
 ###         (ii) more points than expected
 ### NB: unselected points will not be parsed
 #######################################################################################
+
   def onfiducialCBox(self):
     # (1) CLEAR the list 
     self.clearTable() ### Eliminate the electrode list
@@ -223,6 +226,7 @@ class ContactPositionEstimatorWidget(ScriptedLoadableModuleWidget):
     # notify error
     slicer.util.showStatusMessage(operationLog)
     if len(self.electrodeList) == 0:
+
       return
     # GUI CT Segmentation - Section
     # CT selector  input volume selector
@@ -239,18 +243,24 @@ class ContactPositionEstimatorWidget(ScriptedLoadableModuleWidget):
     self.ctVolumeCB.setToolTip( "Pick the input to the algorithm." )
     
     self.volumeCtLabel = qt.QLabel("CT Volume")
-    self.segmentationFL.addRow(self.volumeCtLabel, self.ctVolumeCB) # 
+    self.segmentationFL.addRow(self.volumeCtLabel, self.ctVolumeCB)  
 
     # START Segmentation Button
     self.startSegmentationPB = qt.QPushButton("Start Segmentation")
     self.startSegmentationPB.toolTip = "Run the algorithm."
     self.startSegmentationPB.enabled = True
-  
+
+    # SPLIT Fiducials Button
+    self.splitFiducialPB = qt.QPushButton("Split Fiducial")
+    self.splitFiducialPB.toolTip = "Split Fiducial file, one for each electrode"
+    self.splitFiducialPB.enabled = True
+
+    self.segmentationFL.addRow("",self.splitFiducialPB)
     self.segmentationFL.addRow("",self.startSegmentationPB)
 
     # connections
+    self.splitFiducialPB.connect('clicked(bool)',self.onsplitFiducialClick)
     self.startSegmentationPB.connect('clicked(bool)', self.onstartSegmentationPB)
-
     
 #######################################################################################
 ### on ContactPositionEstimator BUTTON
@@ -274,6 +284,55 @@ class ContactPositionEstimatorWidget(ScriptedLoadableModuleWidget):
                                  self.models)
     print "END RUN SEGMENTATION ALGORITHM "
     slicer.util.showStatusMessage("END SEGMENTATION")
+
+
+#######################################################################################
+### onSplitFiducialClick
+#######################################################################################
+  def onsplitFiducialClick(self):
+    """ onSplitFiducialClick  """
+    return
+
+    # read get the fiducial file reconstructed
+    fiducialData = self.fiducialSplitBox.currentNode()
+    
+    # Get channel names 
+    chLabels = [ fiducialData.GetNthFiducialLabel(i) for i in xrange(fiducialData.GetNumberOfFiducials())]
+
+    # Extract electrode name from channel names
+    elLabels = [ re.match('[A-Z]\'?',x).group(0) for x in chLabels]
+    uniqueElLabels = set(elLabels)
+
+    # count for each electrode name the number of segmented contacts
+    elChCounts = [ elLabels.count(x) for x in uniqueElLabels ]
+
+    offset = 0
+    for elIdx in uniqueElLabels:
+        for chIdx in xrange(elChCounts[elIdx]):
+            # we have to create a separate fiducial file for 
+            # each electrode and populate with corresponding 
+            # channel positions and labels
+
+            elLabel = uniqueElLabels[elIdx]
+            newFids = slicer.modules.markups.logic().addNewFiducialNode(elLabel)
+            newFids = fiducialData.GetNthFiducialPosition(chIdx + offset)
+        offset += elChCounts[elIdx]
+
+
+
+
+
+    
+
+
+
+
+
+
+
+
+
+
 #######################################################################################
 ### clearTable
 #######################################################################################
@@ -294,6 +353,10 @@ class ContactPositionEstimatorWidget(ScriptedLoadableModuleWidget):
     self.segmentationFL.takeAt(self.segmentationFL.count())
     self.segmentationFL.takeAt(self.segmentationFL.count())
 
+    self.splitFiducialPB.setParent(None)
+    self.splitFiducialPB.deleteLater()
+    self.segmentationFL.takeAt(self.segmentationFL.count())
+
     
     last = len(self.electrodeList) - 1
     while last >= 0 :
@@ -310,7 +373,7 @@ class ContactPositionEstimatorWidget(ScriptedLoadableModuleWidget):
 
 #########################################################################################
 ####                                                                                 ####
-#### ContactPositionEstimatorLogic #########################################################################
+#### ContactPositionEstimatorLogic ######################################################
 ####                                                                                 ####
 #########################################################################################
 class ContactPositionEstimatorLogic(ScriptedLoadableModuleLogic):
@@ -352,8 +415,8 @@ class ContactPositionEstimatorLogic(ScriptedLoadableModuleLogic):
     ### per il nodo corrente, invece che di default
     mlogic.SetDefaultMarkupsDisplayNodeTextScale(1.3)
     mlogic.SetDefaultMarkupsDisplayNodeGlyphScale(1.5)
-    mlogic.SetDefaultMarkupsDisplayNodeColor(0.39,0.78,0.78)  # AZZURRO CACCA
-    mlogic.SetDefaultMarkupsDisplayNodeSelectedColor(0.39,1.0,0.39)  # VERDONE CACCA
+    mlogic.SetDefaultMarkupsDisplayNodeColor(0.39,0.78,0.78)  # AZZURRO 
+    mlogic.SetDefaultMarkupsDisplayNodeSelectedColor(0.39,1.0,0.39)  # VERDONE
     
     fidNode = slicer.util.getNode(mlogic.AddNewFiducialNode("recon"))
 
@@ -420,6 +483,9 @@ class ContactPositionEstimatorLogic(ScriptedLoadableModuleLogic):
       slicer.mrmlScene.AddNode(modelDisplay)
       model.SetAndObserveDisplayNodeID(modelDisplay.GetID())
       slicer.mrmlScene.AddNode(model)
+
+      # Lock all markup
+      mlogic.SetAllMarkupsLocked(fidNode,True)
       
       # update progress bar
       self.pb.setValue(i+1)
@@ -447,9 +513,11 @@ class ContactPositionEstimatorLogic(ScriptedLoadableModuleLogic):
 
 
 
+
+
 #########################################################################################
 ####                                                                                 ####
-#### Electrode ##########################################################################
+#### Electrode                                                                       ####
 ####                                                                                 ####
 #########################################################################################
 class Electrode():
