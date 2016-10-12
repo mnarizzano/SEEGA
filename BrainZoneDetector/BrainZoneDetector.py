@@ -80,28 +80,31 @@ class BrainZoneDetectorWidget(ScriptedLoadableModuleWidget):
     self.fidsSelectorZone.setMRMLScene( slicer.mrmlScene )
     self.fidsSelectorZone.setToolTip("Select a fiducial list")
     self.zoneDetectionLayout.addRow("Fiducial : ", self.fidsSelectorZone)
+
+    self.ROISize =  qt.QLineEdit("7")
+    self.ROISize.setToolTip("Define side length of cubic region centered in contact centroid")
+    self.ROISize.setInputMask("D")
     
     # Run Zone Detection button
     self.zoneButton = qt.QPushButton("Apply")
     self.zoneButton.toolTip = "Run the algorithm."
     self.zoneButton.enabled = True
 
-
-    #### Aggiungo il bottone al layout
+    self.zoneDetectionLayout.addRow("Cubic Region Side Length:", self.ROISize)
     self.zoneDetectionLayout.addRow(self.zoneButton)
 
     # connections
     self.zoneButton.connect('clicked(bool)', self.onZoneButton)
 
 #######################################################################################
-###  onZoneButton #
+###  onZoneButton                                                                 #####
 #######################################################################################
   def onZoneButton(self):
     slicer.util.showStatusMessage("START Zone Detection")
     print "RUN Zone Detection Algorithm"
     BrainZoneDetectorLogic().runZoneDetection(self.fidsSelectorZone.currentNode(),\
                                          self.atlasInputSelector.currentNode(),\
-                                         self.lutPath)
+                                         self.lutPath, int(self.ROISize.text))
     print "END Zone Detection Algorithm"
     slicer.util.showStatusMessage("END Zone Detection")
     
@@ -111,7 +114,7 @@ class BrainZoneDetectorWidget(ScriptedLoadableModuleWidget):
 
 #########################################################################################
 ####                                                                                 ####
-#### BrainZoneDetectorLogic #############################################################
+#### BrainZoneDetectorLogic                                                          ####
 ####                                                                                 ####
 #########################################################################################
 class BrainZoneDetectorLogic(ScriptedLoadableModuleLogic):
@@ -121,14 +124,20 @@ class BrainZoneDetectorLogic(ScriptedLoadableModuleLogic):
     # Create a Progress Bar
     self.pb = qt.QProgressBar()
 
-  def runZoneDetection(self,fids,inputAtlas,colorLut):
-    #[TODO] CHE FA QUI
+  def runZoneDetection(self,fids,inputAtlas,colorLut,sideLength):
+    # initialize variables that will hold the number of fiducials
     nFids = fids.GetNumberOfFiducials()    
+    # the volumetric atlas
     atlas = slicer.util.array(inputAtlas.GetName())
+    # an the transformation matrix from RAS coordinte to Voxels
     ras2vox_atlas = vtk.vtkMatrix4x4()
     inputAtlas.GetRASToIJKMatrix(ras2vox_atlas)
 
-    #[TODO] CHE FA QUI????
+    # read freesurfer color LUT there could possibly 
+    # already exist these values within 3DSlicer modules
+    # but in python was too easy to read if from scratch that I simply
+    # read it again.
+    # FSLUT will hold for each brain area its tag and name
     FSLUT = {}
     with open(colorLut,'r') as f:
       for line in f:
@@ -149,12 +158,13 @@ class BrainZoneDetectorLogic(ScriptedLoadableModuleLogic):
       # update progress bar
       self.pb.setValue(i+1)
       slicer.app.processEvents()
+
       # Only for Active Fiducial points the GMPI is computed
       if fids.GetNthFiducialSelected(i) == True:
 
-
-        # istantiate the variable which holds the point
+        # instantiate the variable which holds the point
         currContactCentroid = [0,0,0]      
+
         # copy current position from FiducialList
         fids.GetNthFiducialPosition(i,currContactCentroid)
 
@@ -164,11 +174,11 @@ class BrainZoneDetectorLogic(ScriptedLoadableModuleLogic):
         # transform from RAS to IJK
         voxIdx = ras2vox_atlas.MultiplyFloatPoint(currContactCentroid)
         voxIdx = numpy.round(numpy.array(voxIdx[:3])).astype(int)
-      
-        # build a -3:3 linear mask
-        mask = numpy.arange(-3,4)
+
+        # build a -sideLength/2:sideLength/2 linear mask
+        mask = numpy.arange(int(-numpy.floor(sideLength/2)),int(numpy.floor(sideLength/2)+1))
         
-        # get Patch Values from loaded Atlas in a 7x7x7 region around
+        # get Patch Values from loaded Atlas in a sideLenght**3 region around
         # contact centroid and extract the frequency for each unique
         # patch Value present in the region
         patchValues = atlas[numpy.ix_(mask+voxIdx[2],\
@@ -187,10 +197,12 @@ class BrainZoneDetectorLogic(ScriptedLoadableModuleLogic):
         patchNames = [FSLUT[pValues] for pValues in uniqueValues]
         # Create the zones
         parcels = dict(zip(itemfreq,patchNames))
-        #print parcels
-        #[TODO] COSA FA QUI???
+
+        # prepare parcellation string with percentage of values
+        # within the ROI centered in currContactCentroid
         anatomicalPositionsString = [','.join([v,str( round( float(k) / totPercentage * 100 ))])\
                                      for k,v in parcels.iteritems()]
+
         # Preserve if some old description was already there
         fids.SetNthMarkupDescription(i,fids.GetNthMarkupDescription(i) + \
                                      " " + ','.join(anatomicalPositionsString))

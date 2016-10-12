@@ -179,7 +179,7 @@ class GMPIComputationLogic(ScriptedLoadableModuleLogic):
     if ((leftPial == None) or (rightPial == None) or \
         (leftWhite == None) or (rightWhite == None)):
       # notify error
-      slicer.util.showStatusMessage("Error, please select the four volumes!")
+      slicer.util.showStatusMessage("Error, please select the four surfaces!")
       return
 
     # Set the parameters of the progess bar and show it 
@@ -200,7 +200,12 @@ class GMPIComputationLogic(ScriptedLoadableModuleLogic):
         # Check if it is a left or right channel, by reading the contact
         # label. If the label contain the '(prime) char then the contact
         # is in the left emisphere, right otherwise
-        #[TODO]: better way to do it? 
+        #[TODO]: better way to do it?
+        # within 3DSlicer volumes are represented in RAS/RAI (check) so 
+        # one can actually think of using channel position (e.g. positive 
+        # or negative x respect to the volume centre)
+        # instead of using contact names (which 
+        # may significantly vary among centres)
         chLabel = fids.GetNthFiducialLabel(i)
         if re.search('^\w\d+',chLabel) is None:
           # left channel
@@ -211,11 +216,12 @@ class GMPIComputationLogic(ScriptedLoadableModuleLogic):
           pial = rightPial.GetPolyData()
           white = rightWhite.GetPolyData()
           
-        # [TODO] : ????
+        # [TODO] : we need to convert vtk object to numpy in order 
+        # to take advantage of numpy functions to compute the minimum distance
         pialVertices = vtk.util.numpy_support.vtk_to_numpy(pial.GetPoints().GetData())
         whiteVertices = vtk.util.numpy_support.vtk_to_numpy(white.GetPoints().GetData())
 
-        # istantiate the variable which holds the point
+        # instantiate the variable which holds the point
         currContactCentroid = [0,0,0]
 
         # copy current position from FiducialList
