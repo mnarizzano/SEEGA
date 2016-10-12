@@ -250,6 +250,9 @@ class ContactPositionEstimatorWidget(ScriptedLoadableModuleWidget):
     self.startSegmentationPB.toolTip = "Run the algorithm."
     self.startSegmentationPB.enabled = True
 
+    # CREATE vtk models
+    self.createVTKModels = qt.QCheckBox("VTK?")
+
     # SPLIT Fiducial Combobox
     self.fiducialSplitBox = slicer.qMRMLNodeComboBox()
     self.fiducialSplitBox.nodeTypes = ( ("vtkMRMLMarkupsFiducialNode"), "" )
@@ -266,7 +269,12 @@ class ContactPositionEstimatorWidget(ScriptedLoadableModuleWidget):
     self.splitFiducialPB.toolTip = "Split Fiducial file, one for each electrode"
     self.splitFiducialPB.enabled = True
 
-    self.segmentationFL.addRow("",self.startSegmentationPB)
+    horzGroupLayout = qt.QHBoxLayout()
+    horzGroupLayout.addWidget(self.startSegmentationPB)
+    horzGroupLayout.addWidget(self.createVTKModels)
+
+
+    self.segmentationFL.addRow("",horzGroupLayout)
     self.segmentationFL.addRow("",self.fiducialSplitBox)
     self.segmentationFL.addRow("",self.splitFiducialPB)
 
@@ -293,7 +301,7 @@ class ContactPositionEstimatorWidget(ScriptedLoadableModuleWidget):
     ContactPositionEstimatorLogic().runSegmentation(self.electrodeList,self.ctVolumeCB.currentNode(),\
                                  slicer.modules.ContactPositionEstimatorInstance.parentPath,\
                                  slicer.modules.ContactPositionEstimatorInstance.deetoExecutablePath,\
-                                 self.models)
+                                 self.models,self.createVTKModels)
     print "END RUN SEGMENTATION ALGORITHM "
     slicer.util.showStatusMessage("END SEGMENTATION")
 
@@ -404,7 +412,7 @@ class ContactPositionEstimatorLogic(ScriptedLoadableModuleLogic):
 #######################################################################################
 ### runSegmentation
 #######################################################################################
-  def runSegmentation(self,elList,volume,parentPath,deetoExe,models):
+  def runSegmentation(self,elList,volume,parentPath,deetoExe,models,createVTK):
     ### CHECK that both the fiducials and ct volume have been selected
     if (len(elList) == 0):
       # notify error
@@ -484,24 +492,25 @@ class ContactPositionEstimatorLogic(ScriptedLoadableModuleLogic):
       p3[0] = p2[0] + (p2[0] - p1[0]) / delta * 3 # distance 3mm
       p3[1] = p2[1] + (p2[1] - p1[1]) / delta * 3 # distance 3mm
       p3[2] = p2[2] + (p2[2] - p1[2]) / delta * 3 # distance 3mm
-      ### Create a vtk line
-      lineSource = vtk.vtkLineSource()
-      lineSource.SetPoint1(p1)
-      lineSource.SetPoint2(p3)
-      lineSource.SetResolution(100) ## why?
-      lineSource.Update()
-      ### Create a model of the line to add to the scene
-      model = slicer.vtkMRMLModelNode()
-      model.SetName(name + "_direction")
-      model.SetAndObservePolyData(lineSource.GetOutput())
-      modelDisplay = slicer.vtkMRMLModelDisplayNode()
-      modelDisplay.SetSliceIntersectionVisibility(True) # Hide in slice view
-      modelDisplay.SetVisibility(True) # Show in 3D view
-      modelDisplay.SetColor(1,0,0)
-      modelDisplay.SetLineWidth(2)
-      slicer.mrmlScene.AddNode(modelDisplay)
-      model.SetAndObserveDisplayNodeID(modelDisplay.GetID())
-      slicer.mrmlScene.AddNode(model)
+      if createVTK.checked:
+          ### Create a vtk line
+          lineSource = vtk.vtkLineSource()
+          lineSource.SetPoint1(p1)
+          lineSource.SetPoint2(p3)
+          lineSource.SetResolution(100) ## why?
+          lineSource.Update()
+          ### Create a model of the line to add to the scene
+          model = slicer.vtkMRMLModelNode()
+          model.SetName(name + "_direction")
+          model.SetAndObservePolyData(lineSource.GetOutput())
+          modelDisplay = slicer.vtkMRMLModelDisplayNode()
+          modelDisplay.SetSliceIntersectionVisibility(True) # Hide in slice view
+          modelDisplay.SetVisibility(True) # Show in 3D view
+          modelDisplay.SetColor(1,0,0)
+          modelDisplay.SetLineWidth(2)
+          slicer.mrmlScene.AddNode(modelDisplay)
+          model.SetAndObserveDisplayNodeID(modelDisplay.GetID())
+          slicer.mrmlScene.AddNode(model)
 
       # Lock all markup
       mlogic.SetAllMarkupsLocked(fidNode,True)
