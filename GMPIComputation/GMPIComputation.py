@@ -39,6 +39,7 @@ class GMPIComputationWidget(ScriptedLoadableModuleWidget):
 ### setup 
 #######################################################################################
   def setup(self):
+    self.developerMode = True
     ScriptedLoadableModuleWidget.setup(self)
 
     self.gmpiCB = ctk.ctkCollapsibleButton()
@@ -109,6 +110,25 @@ class GMPIComputationWidget(ScriptedLoadableModuleWidget):
     self.fiducialsCBox.setToolTip("Select a fiducial list")
     self.gmpiFL.addRow("Fiducial : ", self.fiducialsCBox)
 
+    #### GMPI Threshold Slider
+    self.gmpiSlider = qt.QSlider(qt.Qt.Horizontal)
+    self.gmpiSlider.setMinimum(-9)
+    self.gmpiSlider.setMaximum(9)
+    self.gmpiSlider.setValue(-3)
+    
+    #### GMPI Spin Box
+    self.gmpiSpinBox = qt.QDoubleSpinBox()
+    self.gmpiSpinBox.setRange(-1, 1)
+    self.gmpiSpinBox.setSingleStep(0.1) 
+    self.gmpiSpinBox.setValue(float(self.gmpiSlider.value)/10)       
+
+    #### GMPI Slider e SpinBox Layout
+    self.gmpiverticalLayout = qt.QHBoxLayout()
+
+    self.gmpiverticalLayout.addWidget(self.gmpiSlider)
+    self.gmpiverticalLayout.addWidget(self.gmpiSpinBox)    
+    self.gmpiFL.addRow("GMPI Threshold : ", self.gmpiverticalLayout)
+    
     # GMPI Computation Detection button
     self.gmpiPB = qt.QPushButton("Apply")
     self.gmpiPB.toolTip = "Run the algorithm."
@@ -120,6 +140,11 @@ class GMPIComputationWidget(ScriptedLoadableModuleWidget):
     # connections
     self.gmpiPB.connect('clicked(bool)', self.onGMPIComputation)
 
+    self.gmpiSpinBox.valueChanged.connect(self.onSpinBoxValueChange)
+    self.gmpiSlider.valueChanged.connect(self.onSliderValueChange)
+
+
+    
 #######################################################################################
 ###  onGMPIComputation
 #######################################################################################
@@ -136,6 +161,17 @@ class GMPIComputationWidget(ScriptedLoadableModuleWidget):
     print "END GMPI Computation"
     slicer.util.showStatusMessage("END GMPI Computation")
 
+#######################################################################################
+###  onSliderValueChange and onSpinBoxValueChange
+#######################################################################################
+  def onSliderValueChange(self):
+    self.gmpiSpinBox.setValue(float(self.gmpiSlider.value)/10)
+
+  def onSpinBoxValueChange(self):
+      self.gmpiSlider.setValue(float(self.gmpiSpinBox.value)*10)
+
+
+    
 #########################################################################################
 ####                                                                                 ####
 #### GMPIComputationLogic  ##############################################################
