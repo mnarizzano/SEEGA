@@ -49,7 +49,12 @@ DO NOTHING
 ################################################
 #### 1.3 CONFIGURATION UNDER MAC OX	
 ################################################
-TODO
+Using a plain text editor, modify the config file under 
+"DEEETO/Config/deeto.config" by replacing the line
+      {"deeto": "DeetoS/deeto-static-linux64"} 
+with the line
+      {"deeto": "DeetoS/deeto-macos"}
+Please be sure that no new line character is present at the end. 
 
 ################################################
 ### 2 HOW TO ADD DEETO IN SLICER
