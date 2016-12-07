@@ -1,14 +1,16 @@
 # SEEGA
 ![alt tag](https://raw.githubusercontent.com/mnarizzano/SEEGA/master/SEEG_Assistant.png)
 
-Background: In the evaluation of Stereo-Electroencephalography (SEEG)
+## Background: 
+In the evaluation of Stereo-Electroencephalography (SEEG)
 signals, the physicist’s workflow involves several operations, including determining
 the position of individual electrode contacts in terms of both relationship to grey
 or white matter and location in specific brain regions. These operations are (i)
 generally carried out manually by experts with limited computer support, (ii)
 hugely time consuming, and (iii) often inaccurate, incomplete, and prone to
 errors.
-Results: In this paper we present SEEG Assistant, a set of tools integrated in a
+## Results: 
+In this paper we present SEEG Assistant, a set of tools integrated in a
 single 3DSlicer extension, which aims to assist neurosurgeons in the analysis of
 post-implant structural data and hence aid the neurophysiologist in the
 interpretation of SEEG data. SEEG Assistant consists of (i) a module to localize
@@ -26,7 +28,8 @@ compared the results between the proposed tool and gold-standard clinical
 practice. As a result, the use of SEEG Assistant decreases the post implant
 processing time by more than 2 orders of magnitude, improves the quality of
 results and decreases, if not eliminates, errors in post implant processing.
-Conclusions: The SEEG Assistant Framework for the first time supports
+## Conclusions: 
+The SEEG Assistant Framework for the first time supports
 physicists by providing a set of open-source tools for post-implant processing of
 SEEG data. Furthermore, SEEG Assistant has been integrated into 3D Slicer, a
 software platform for the analysis and visualization of medical images,
