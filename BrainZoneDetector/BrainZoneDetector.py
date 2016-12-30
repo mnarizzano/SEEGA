@@ -181,20 +181,33 @@ class BrainZoneDetectorLogic(ScriptedLoadableModuleLogic):
         # get Patch Values from loaded Atlas in a sideLenght**3 region around
         # contact centroid and extract the frequency for each unique
         # patch Value present in the region
-        patchValues = atlas[numpy.ix_(mask+voxIdx[2],\
-                                      mask+voxIdx[1],\
-                                      mask+voxIdx[0])]
+
+        [X,Y,Z] = numpy.meshgrid(mask,mask,mask)
+        maskVol = numpy.sqrt(X**2+Y**2+Z**2) <= numpy.floor(sideLength/2)
+
+        X = X[maskVol]+voxIdx[0]
+        Y = Y[maskVol]+voxIdx[1]
+        Z = Z[maskVol]+voxIdx[2]
+
+        patchValues = atlas[Z,Y,X]
+
+
         # Find the unique values on the matrix above
         uniqueValues = numpy.unique(patchValues)
         
         # Flatten the patch value and create a tuple
         patchValues = tuple(patchValues.flatten(1))
+
+
         # Create an array of frequency for each unique value
         itemfreq = [patchValues.count(x) for x in uniqueValues]
+
         # Compute the max frequency
         totPercentage = numpy.sum(itemfreq)
+
         # Recover the real patch names
         patchNames = [FSLUT[pValues] for pValues in uniqueValues]
+
         # Create the zones
         parcels = dict(zip(itemfreq,patchNames))
 
