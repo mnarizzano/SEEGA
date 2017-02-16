@@ -1,5 +1,13 @@
 # SEEGA
-![alt tag](https://raw.githubusercontent.com/mnarizzano/SEEGA/master/SEEG_Assistant.png)
+[//]:# (![alt tag](https://raw.githubusercontent.com/mnarizzano/SEEGA/master/SEEG_Assistant.png))
+To cite the work please refer to:
+
+1. Narizzano M., Arnulfo G., Ricci S., Toselli B., Canessa A., Tisdall M., Fato M. M., Cardinale F. “SEEG Assistant: a 3DSlicer extension to support epilepsy surgery” BMC Bioinformatics (2017) doi;10.1186/s12859-017-1545-8, In Press
+2. Arnulfo G, Narizzano M, Cardinale F, Fato MM, Palva JM. Automatic segmentation of deep intracerebral electrodes in computed tomography scans. BMC Bioinforma. 2015;16(1):99.
+
+## Installation 
+
+Full installation instructions are provided [here](https://github.com/mnarizzano/SEEGA/wiki)
 
 ## Background: 
 In the evaluation of Stereo-Electroencephalography (SEEG)
@@ -9,6 +17,7 @@ or white matter and location in specific brain regions. These operations are (i)
 generally carried out manually by experts with limited computer support, (ii)
 hugely time consuming, and (iii) often inaccurate, incomplete, and prone to
 errors.
+
 ## Results: 
 In this paper we present SEEG Assistant, a set of tools integrated in a
 single 3DSlicer extension, which aims to assist neurosurgeons in the analysis of
@@ -28,6 +37,7 @@ compared the results between the proposed tool and gold-standard clinical
 practice. As a result, the use of SEEG Assistant decreases the post implant
 processing time by more than 2 orders of magnitude, improves the quality of
 results and decreases, if not eliminates, errors in post implant processing.
+
 ## Conclusions: 
 The SEEG Assistant Framework for the first time supports
 physicists by providing a set of open-source tools for post-implant processing of
