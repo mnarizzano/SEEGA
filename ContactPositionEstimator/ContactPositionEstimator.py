@@ -29,7 +29,7 @@ class ContactPositionEstimator(ScriptedLoadableModule):
 #########################################################################################
   def __init__(self, parent):
     ScriptedLoadableModule.__init__(self, parent)
-    self.parent.title = "Contact Position Estimator"
+    self.parent.title = "1. Contact Position Estimator"
     self.parent.categories = ["SEEGA"]
     self.parent.dependencies = []
     self.parent.contributors = ["G. Arnulfo (Univ. Genoa) & M. Narizzano (Univ. Genoa)"]
@@ -144,7 +144,7 @@ class ContactPositionEstimatorWidget(ScriptedLoadableModuleWidget):
       self.models = json.load(data_file)
 
     #### Create the caption table for the configuration
-    self.tableCaption = ["Name","Type/Model","Tail","Head"]
+    self.tableCaption = ["Name","Type/Model","TP","cEP"]
     self.tableHsize  = [80,180,50,50]
     self.captionGB = qt.QGroupBox(self.segmentationCB)
     self.captionBL = qt.QHBoxLayout(self.captionGB)
@@ -251,7 +251,7 @@ class ContactPositionEstimatorWidget(ScriptedLoadableModuleWidget):
     self.startSegmentationPB.enabled = True
 
     # CREATE vtk models
-    self.createVTKModels = qt.QCheckBox("VTK?")
+    self.createVTKModels = qt.QCheckBox("Create Shaft Model?")
 
     # SPLIT Fiducial Combobox
     self.fiducialSplitBox = slicer.qMRMLNodeComboBox()
@@ -265,7 +265,7 @@ class ContactPositionEstimatorWidget(ScriptedLoadableModuleWidget):
 
 
     # SPLIT Fiducials Button
-    self.splitFiducialPB = qt.QPushButton("Split Fiducial")
+    self.splitFiducialPB = qt.QPushButton("Split Fiducial List")
     self.splitFiducialPB.toolTip = "Split Fiducial file, one for each electrode"
     self.splitFiducialPB.enabled = True
 

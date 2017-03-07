@@ -16,7 +16,7 @@ class BrainZoneDetector(ScriptedLoadableModule):
   """
   def __init__(self, parent):
     ScriptedLoadableModule.__init__(self, parent)
-    self.parent.title = "Brain Zone Detector" # TODO make this more human readable by adding spaces
+    self.parent.title = "2. Brain Zone Detector" # TODO make this more human readable by adding spaces
     self.parent.categories = ["SEEGA"]
     self.parent.dependencies = []
     self.parent.contributors = ["G. Arnulfo (Univ. Genoa) & M. Narizzano (Univ. Genoa)"]
@@ -90,7 +90,7 @@ class BrainZoneDetectorWidget(ScriptedLoadableModuleWidget):
     self.zoneButton.toolTip = "Run the algorithm."
     self.zoneButton.enabled = True
 
-    self.zoneDetectionLayout.addRow("Cubic Region Side Length:", self.ROISize)
+    self.zoneDetectionLayout.addRow("Spherical Region Side Length:", self.ROISize)
     self.zoneDetectionLayout.addRow(self.zoneButton)
 
     # connections

@@ -18,7 +18,7 @@ class GMPIComputation(ScriptedLoadableModule):
 
   def __init__(self, parent):
     ScriptedLoadableModule.__init__(self, parent)
-    self.parent.title = "GMPIComputation" # TODO make this more human readable by adding spaces
+    self.parent.title = "3. GMPIComputation" # TODO make this more human readable by adding spaces
     self.parent.categories = ["SEEGA"]
     self.parent.dependencies = []
     self.parent.contributors = ["Gabriele Arnulfo (Univ. Genoa) & Massimo Narizzano (Univ. Genoa)"]
