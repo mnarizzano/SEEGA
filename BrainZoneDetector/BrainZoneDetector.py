@@ -199,6 +199,9 @@ class BrainZoneDetectorLogic(ScriptedLoadableModuleLogic):
         # Flatten the patch value and create a tuple
         patchValues = tuple(patchValues.flatten(1))
 
+        voxWhite = patchValues.count(2) + patchValues.count(41)
+        voxGray = len(patchValues) - voxWhite
+        PTD = float(voxGray - voxWhite) / (voxGray + voxWhite)
 
         # Create an array of frequency for each unique value
         itemfreq = [patchValues.count(x) for x in uniqueValues]
@@ -217,6 +220,7 @@ class BrainZoneDetectorLogic(ScriptedLoadableModuleLogic):
         # [round( float(k) / totPercentage * 100 ) for k,v in parcels.iteritems()]
         ordParcels = collections.OrderedDict(sorted(parcels.items(), reverse=True))
         anatomicalPositionsString = [','.join([v,str( round( float(k) / totPercentage * 100 ))]) for k,v in ordParcels.iteritems()]
+        anatomicalPositionsString.append('PTD, {:.2f}'.format(PTD))
 
         # Preserve if some old description was already there
         fids.SetNthMarkupDescription(i,fids.GetNthMarkupDescription(i) + " " + ','.join(anatomicalPositionsString))
