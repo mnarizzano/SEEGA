@@ -4,6 +4,7 @@ import vtk, qt, ctk, slicer
 from slicer.ScriptedLoadableModule import *
 import re
 import numpy
+import collections
 import logging
 
 #
@@ -213,10 +214,10 @@ class BrainZoneDetectorLogic(ScriptedLoadableModuleLogic):
 
         # prepare parcellation string with percentage of values
         # within the ROI centered in currContactCentroid
-        anatomicalPositionsString = [','.join([v,str( round( float(k) / totPercentage * 100 ))])\
-                                     for k,v in parcels.iteritems()]
+        # [round( float(k) / totPercentage * 100 ) for k,v in parcels.iteritems()]
+        ordParcels = collections.OrderedDict(sorted(parcels.items(), reverse=True))
+        anatomicalPositionsString = [','.join([v,str( round( float(k) / totPercentage * 100 ))]) for k,v in ordParcels.iteritems()]
 
         # Preserve if some old description was already there
-        fids.SetNthMarkupDescription(i,fids.GetNthMarkupDescription(i) + \
-                                     " " + ','.join(anatomicalPositionsString))
+        fids.SetNthMarkupDescription(i,fids.GetNthMarkupDescription(i) + " " + ','.join(anatomicalPositionsString))
 
