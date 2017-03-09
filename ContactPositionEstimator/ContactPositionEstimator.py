@@ -174,14 +174,16 @@ class ContactPositionEstimatorWidget(ScriptedLoadableModuleWidget):
 
     def onfiducialCBox(self):
         # (1) CLEAR the list
-        self.clearTable()  ### Eliminate the electrode list
+        self.clearTable()  # Eliminate the electrode list
 
-        if self.fiducialCBox.currentNode() == None:
+        if self.fiducialCBox.currentNode() is None:
             return
         # (2.a) Read the fiducial list
         operationLog = ""  # error/warning Log string
         self.fids = self.fiducialCBox.currentNode()
         self.electrodeList = []
+
+        # here we fill electrode list using fiducials
         for i in xrange(self.fids.GetNumberOfFiducials()):
             if self.fids.GetNthFiducialSelected(i) == True:
                 P2 = [0.0, 0.0, 0.0]
@@ -216,10 +218,15 @@ class ContactPositionEstimatorWidget(ScriptedLoadableModuleWidget):
             operationLog += "ERR: \"" + el[i].name.text + "\" Missing entry or target"
             el[i].delete()
             self.electrodeList.remove(el[i])
+        # here electrodeList should have all the electrode objects in the list
+        # we sort the electrode in list alphabetically
+        self.electrodeList = sorted(self.electrodeList,key=lambda (x): x.name.text)
 
         # Link the electrode to the Form
-        for i in (xrange(len(self.electrodeList))):
-            self.segmentationFL.addRow("", self.electrodeList[i].row)
+        for elec in self.electrodeList:
+            elec.computeLength()
+            self.segmentationFL.addRow("", elec.row)
+
 
         # notify error
         slicer.util.showStatusMessage(operationLog)
@@ -321,7 +328,7 @@ class ContactPositionEstimatorWidget(ScriptedLoadableModuleWidget):
         chLabels = [fiducialData.GetNthFiducialLabel(i) for i in xrange(fiducialData.GetNumberOfFiducials())]
 
         # Extract electrode name from channel names
-        elLabels = [re.match('[A-Z]\'?', x).group(0) for x in chLabels]
+        elLabels = [re.match('[A-Z]*\'?', x).group(0) for x in chLabels]
         uniqueElLabels = uniquify(elLabels)
 
         # count for each electrode name the number of segmented contacts
@@ -516,10 +523,10 @@ class ContactPositionEstimatorLogic(ScriptedLoadableModuleLogic):
     #######################################################################################
     def saveNode(self, node, filename, properties={}):
         """Save 'node' data into 'filename'.
-    It is the user responsability to provide the appropriate file extension.
+    It is the user responsibility to provide the appropriate file extension.
     User has also the possibility to overwrite the fileType internally retrieved using
     method 'qSlicerCoreIOManager::fileWriterFileType(vtkObject*)'. This can be done
-    by specifiying a 'fileType'attribute to the optional 'properties' dictionary.
+    by specifying a 'fileType'attribute to the optional 'properties' dictionary.
     """
         from slicer import app
         properties["nodeID"] = node.GetID();
@@ -583,6 +590,14 @@ class Electrode():
         self.headCheckBox.setMaximumHeight(20)
         self.headCheckBox.setStyleSheet("qproperty-alignment: AlignCenter;")
         self.hlayout.addWidget(self.headCheckBox)
+
+    def computeLength(self):
+        if len(self.entry) is 0 or len(self.target) is 0:
+            self.length = 0
+        tmpEP = numpy.array(self.entry)
+        tmpTP = numpy.array(self.target)
+        # compute euclidean distance
+        self.length = numpy.sqrt(numpy.sum((tmpEP-tmpTP)**2))
 
     #######################################################################################
     ### delete
