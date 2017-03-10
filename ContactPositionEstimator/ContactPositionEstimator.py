@@ -141,6 +141,7 @@ class ContactPositionEstimatorWidget(ScriptedLoadableModuleWidget):
         #### Configure Segmentation - Section
         ### Read from files the list of the modules
         with open(slicer.modules.ContactPositionEstimatorInstance.electrodeTypesPath) as data_file:
+            # models is a dictionary with the name of electrode type is the key
             self.models = json.load(data_file)
 
         #### Create the caption table for the configuration
@@ -218,6 +219,7 @@ class ContactPositionEstimatorWidget(ScriptedLoadableModuleWidget):
             operationLog += "ERR: \"" + el[i].name.text + "\" Missing entry or target"
             el[i].delete()
             self.electrodeList.remove(el[i])
+
         # here electrodeList should have all the electrode objects in the list
         # we sort the electrode in list alphabetically
         self.electrodeList = sorted(self.electrodeList,key=lambda (x): x.name.text)
@@ -225,8 +227,8 @@ class ContactPositionEstimatorWidget(ScriptedLoadableModuleWidget):
         # Link the electrode to the Form
         for elec in self.electrodeList:
             elec.computeLength()
+            elec.setElectrodeModel(self.models)
             self.segmentationFL.addRow("", elec.row)
-
 
         # notify error
         slicer.util.showStatusMessage(operationLog)
@@ -464,7 +466,7 @@ class ContactPositionEstimatorLogic(ScriptedLoadableModuleLogic):
                        str(elList[i].entry[2]), tFlag, \
                        str(-1 * elList[i].target[0]), str(-1 * elList[i].target[1]), \
                        str(elList[i].target[2]), '-m'] + \
-                      map(str, models[elList[i].model.currentText])
+                      map(str, models[elList[i].model.currentText][:-1])
             print cmdLine
             # RUN the command line cmdLine.
             # [NOTE] : I have used Popen since subprocess.check_output wont work at the moment
@@ -537,6 +539,10 @@ class ContactPositionEstimatorLogic(ScriptedLoadableModuleLogic):
             filetype = app.coreIOManager().fileWriterFileType(node)
         return app.coreIOManager().saveNodes(filetype, properties)
 
+    # def createModelList(self):
+    #     self.electrodeModelist = list()
+
+
 
 #########################################################################################
 ####                                                                                 ####
@@ -599,9 +605,24 @@ class Electrode():
         # compute euclidean distance
         self.length = numpy.sqrt(numpy.sum((tmpEP-tmpTP)**2))
 
+    def setElectrodeModel(self,availableModels):
+        # availableModels is a dict with elec name as key
+        minLength = 100
+        elecModel = availableModels.keys()[0]
+        for k,v in availableModels.iteritems():
+            elecModelLength = float(v[-1])
+            currMinLength = abs(self.length-elecModelLength)
+            if minLength > currMinLength:
+                minLength = currMinLength
+                elecModel = k
+        modelIdx = self.model.findText(elecModel)
+        if modelIdx >= 0:
+            self.model.setCurrentIndex(modelIdx)
+
     #######################################################################################
     ### delete
     #######################################################################################
     def delete(self):
         self.row.setParent(None)
         self.row.deleteLater()
+
