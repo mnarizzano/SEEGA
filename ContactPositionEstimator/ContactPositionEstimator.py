@@ -539,8 +539,8 @@ class ContactPositionEstimatorLogic(ScriptedLoadableModuleLogic):
             filetype = app.coreIOManager().fileWriterFileType(node)
         return app.coreIOManager().saveNodes(filetype, properties)
 
-    # def createModelList(self):
-    #     self.electrodeModelist = list()
+        # def createModelList(self):
+        #     self.electrodeModelist = list()
 
 
 

@@ -42,6 +42,15 @@ class GMPIComputationWidget(ScriptedLoadableModuleWidget):
         self.developerMode = True
         ScriptedLoadableModuleWidget.setup(self)
 
+        # inspect current Scene and search for files called ?h_pial and ?h_white
+        # if found fill the lists with relative nodes
+        lhPialNode = slicer.mrmlScene.GetNodesByName('lh_pial').GetItemAsObject(0)
+        rhPialNode = slicer.mrmlScene.GetNodesByName('rh_pial').GetItemAsObject(0)
+        lhWhiteNode = slicer.mrmlScene.GetNodesByName('lh_white').GetItemAsObject(0)
+        rhWhiteNode = slicer.mrmlScene.GetNodesByName('rh_white').GetItemAsObject(0)
+        reconFileNode= slicer.mrmlScene.GetNodesByName('recon').GetItemAsObject(0)
+
+
         self.gmpiCB = ctk.ctkCollapsibleButton()
         self.gmpiCB.text = "GMPI Computation"
         self.layout.addWidget(self.gmpiCB)
@@ -71,7 +80,7 @@ class GMPIComputationWidget(ScriptedLoadableModuleWidget):
         self.leftWhiteCBox.showChildNodeTypes = False
         self.leftWhiteCBox.setMRMLScene( slicer.mrmlScene )
         self.leftWhiteCBox.setToolTip( "Pick the left pial." )
-        self.gmpiFL.addRow("Left White: ", self.leftWhiteCBox)
+
 
         #### Right Pial selection box
         self.rightPialCBox = slicer.qMRMLNodeComboBox()
@@ -99,6 +108,11 @@ class GMPIComputationWidget(ScriptedLoadableModuleWidget):
         self.rightWhiteCBox.setToolTip( "Pick the right pial." )
         self.gmpiFL.addRow("Right White: ", self.rightWhiteCBox)
 
+
+
+
+        self.gmpiFL.addRow("Left White: ", self.leftWhiteCBox)
+
         #### Fiducials list Combo Box
         self.fiducialsCBox = slicer.qMRMLNodeComboBox()
         self.fiducialsCBox.nodeTypes = ( ("vtkMRMLMarkupsFiducialNode"), "" )
@@ -109,6 +123,20 @@ class GMPIComputationWidget(ScriptedLoadableModuleWidget):
         self.fiducialsCBox.setMRMLScene( slicer.mrmlScene )
         self.fiducialsCBox.setToolTip("Select a fiducial list")
         self.gmpiFL.addRow("Fiducial : ", self.fiducialsCBox)
+
+
+        # if nodes already exist load them in ComboBoxes
+        if lhWhiteNode:
+            self.leftWhiteCBox.setCurrentNode(lhWhiteNode)
+        if rhWhiteNode:
+            self.rightWhiteCBox.setCurrentNode(rhWhiteNode)
+        if rhPialNode:
+            self.rightPialCBox.setCurrentNode(rhPialNode)
+        if lhPialNode:
+            self.leftPialCBox.setCurrentNode(lhPialNode)
+
+        if reconFileNode:
+            self.fiducialsCBox.setCurrentNode(reconFileNode)
 
         #### GMPI Threshold Slider
         self.gmpiSlider = qt.QSlider(qt.Qt.Horizontal)
@@ -208,7 +236,7 @@ class GMPIComputationLogic(ScriptedLoadableModuleLogic):
     #######################################################################################
     def findNearestVertex(self,contact, surfaceVertices):
         dist = numpy.sqrt( numpy.sum( (contact - surfaceVertices)**2,axis=1) )
-        return surfaceVertices[ dist.argmin(),:]
+        return (surfaceVertices[ dist.argmin(),:],dist.argmin())
 
     #######################################################################################
     ###  computeGMPI
@@ -268,7 +296,7 @@ class GMPIComputationLogic(ScriptedLoadableModuleLogic):
                     pial = rightPial.GetPolyData()
                     white = rightWhite.GetPolyData()
 
-                # [TODO] : we need to convert vtk object to numpy in order
+                # we need to convert vtk object to numpy in order
                 # to take advantage of numpy functions to compute the minimum distance
                 pialVertices = vtk.util.numpy_support.vtk_to_numpy(pial.GetPoints().GetData())
                 whiteVertices = vtk.util.numpy_support.vtk_to_numpy(white.GetPoints().GetData())
@@ -280,35 +308,50 @@ class GMPIComputationLogic(ScriptedLoadableModuleLogic):
                 fids.GetNthFiducialPosition(i,currContactCentroid)
 
                 # find nearest vertex coordinates
-                pialNearVtx = self.findNearestVertex(currContactCentroid,pialVertices)
-                whiteNearVtx = self.findNearestVertex(currContactCentroid,whiteVertices)
+                [whiteNearVtx, whiteNearIdx] = self.findNearestVertex(currContactCentroid,whiteVertices)
+                pialNearVtx = pialVertices[whiteNearIdx]
 
                 # print ",".join([str(pialNearVtx),str(whiteNearVtx),str(currContactCentroid)])
                 gmpi=float("{0:.3f}".format(self.computeGmpi(currContactCentroid,pialNearVtx,whiteNearVtx)))
-                print "gmpi: "+ str(gmpi)
+                print fids.GetNthFiducialLabel(i)+" gmpi: "+ str(gmpi)
+
                 self.descr = fids.GetNthMarkupDescription(i)
-                fids.SetNthMarkupDescription(i,' '.join([self.descr,'GMPI:',str(gmpi),';']))
+                if self.descr[-1:] is ',':
+                    fids.SetNthMarkupDescription(i,' '.join([self.descr,'GMPI,',str(gmpi)]))
+                else:
+                    fids.SetNthMarkupDescription(i, ' '.join([self.descr, ', GMPI,', str(gmpi)]))
 
 
 
 
     def runMontageCreation(self,fids,gmpiThreshold):
-        class Implant:
-            def __init__(self, electrodes=None):
-                if electrodes:
-                    self.electrodes = electrodes
-                else:
-                    self.electrodes = list()
 
-            def computeDistances(self):
-                return None
+        # class Implant:
+        #     def __init__(self, electrodes=None):
+        #         if electrodes:
+        #             self.electrodes = electrodes
+        #         else:
+        #             self.electrodes = list()
+        #         self.distances = numpy.ndarray()
+        #
+        #     def computeDistances(self):
+        #         i = 0
+        #         j = 0
+        #         for el1 in self.electrodes:
+        #             for el2 in self.electrodes:
+        #                 self.distances[i,j] = numpy.sqrt( numpy.sum( (el1.chpos - el2.chpos)**2,axis=1) )
+        #                 i = i +1
+        #                 j = j +1
+
+
 
         class Electrode:
-            def __init__(self, label, chpos=None, gmpi=None, ptd=None):
+            def __init__(self, label, chpos=None, gmpi=None, ptd=None, isSubCtx=False):
                 self.label = label
                 self.gmpi = gmpi
                 self.ptd = ptd
                 self.chpos = chpos
+                self.isSubCtx = isSubCtx
 
             def __add__(self, other):
                 currElecName = re.match("[A-Z]+[']?",self.label).group(0)
@@ -339,10 +382,27 @@ class GMPIComputationLogic(ScriptedLoadableModuleLogic):
             chpos = [0.0, 0.0, 0.0]
             fids.GetNthFiducialPosition(elIdx,chpos)
             desc = fids.GetNthMarkupDescription(elIdx)
-            # gmpi = re.match("[-]?\d+.\d+",re.match("GMPI.*:.*[-]?\d+.\d+",desc).group(0)).group(0)
-            # ptd  = re.match("[-]?\d+.\d+",re.match("PTD:.*:.*[-]?\d+.\d+",desc).group(0)).group(0)
+            desc = re.split(',', desc)
+            descDict = dict()
+            for k,v in zip(desc[::2],desc[1::2]):
+                descDict[k.strip()] = float(v)
 
-            implant[fids.GetNthFiducialLabel(elIdx)] = (chpos) #,gmpi,ptd)
+            if descDict.has_key('GMPI'):
+                gmpi = descDict['GMPI']
+            else:
+                gmpi = numpy.nan
+            if descDict.has_key('PTD'):
+                ptd = descDict['PTD']
+            else:
+                ptd = numpy.nan
+
+            # we need to separate the anatomical names to differentiate between subcortical
+            # and cortical channels.
+            isSubCtx = any([descDict.has_key(x) for x in ('Hip','Put','Amy','Cau','Tal')])
+
+            implant[fids.GetNthFiducialLabel(elIdx)] = (chpos, gmpi, ptd, isSubCtx)
+
+        # implant.computeDistances()
 
         # Create bipolar first
         row = 0
@@ -357,3 +417,5 @@ class GMPIComputationLogic(ScriptedLoadableModuleLogic):
                 bpTableNode.SetCellText(row, 1, srcLabel)
                 bpTableNode.SetCellText(row, 2, '-'+refLabel)
                 row = row + 1
+
+        # Create Closest White scheme
