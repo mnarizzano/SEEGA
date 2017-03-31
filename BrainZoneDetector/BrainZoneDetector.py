@@ -50,6 +50,9 @@ class BrainZoneDetectorWidget(ScriptedLoadableModuleWidget):
         print self.lutPath
         # [END TODO]
 
+        atlasNode = slicer.mrmlScene.GetNodesByName('aparc*').GetItemAsObject(0)
+        reconFileNode = slicer.mrmlScene.GetNodesByName('recon').GetItemAsObject(0)
+
         self.zonedetectionCB = ctk.ctkCollapsibleButton()
         self.zonedetectionCB.text = "Brain Zone Detection"
 
@@ -59,8 +62,8 @@ class BrainZoneDetectorWidget(ScriptedLoadableModuleWidget):
 
         ### Select Atlas
         self.atlasInputSelector = slicer.qMRMLNodeComboBox()
-        self.atlasInputSelector.nodeTypes = (("vtkMRMLScalarVolumeNode"), "")
-        self.atlasInputSelector.addAttribute("vtkMRMLScalarVolumeNode", "LabelMap", 0)
+        self.atlasInputSelector.nodeTypes = ("vtkMRMLLabelMapVolumeNode","vtkMRMLScalarVolumeNode")
+        #self.atlasInputSelector.addAttribute("vtkMRMLScalarVolumeNode", "LabelMap", 0)
         self.atlasInputSelector.selectNodeUponCreation = True
         self.atlasInputSelector.addEnabled = False
         self.atlasInputSelector.removeEnabled = False
@@ -96,6 +99,11 @@ class BrainZoneDetectorWidget(ScriptedLoadableModuleWidget):
 
         self.zoneDetectionLayout.addRow("Spherical Region Side Length:", self.ROISize)
         self.zoneDetectionLayout.addRow(self.zoneButton)
+
+        if atlasNode:
+            self.atlasInputSelector.setCurrentNode(atlasNode)
+        if reconFileNode:
+            self.fidsSelectorZone.setCurrentNode(reconFileNode)
 
         # connections
         self.zoneButton.connect('clicked(bool)', self.onZoneButton)

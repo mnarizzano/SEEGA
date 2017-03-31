@@ -34,14 +34,11 @@ class ContactPositionEstimator(ScriptedLoadableModule):
         self.parent.categories = ["SEEGA"]
         self.parent.dependencies = []
         self.parent.contributors = ["G. Arnulfo (Univ. Genoa) & M. Narizzano (Univ. Genoa)"]
-        self.parent.helpText = """
-    seeg electroDE rEconstruction TOol (ContactPositionEstimator):
-        This tool reconstructs the position of SEEG electrode contacts 
-        from a post-implant Cone-beam CT scan.
-    """
-        self.parent.acknowledgementText = """
-    This file was originally developed by Gabriele Arnulfo & Massimo Narizzano
-    """
+        self.parent.helpText = """seeg electroDE rEconstruction TOol (ContactPositionEstimator):
+                    This tool reconstructs the position of SEEG electrode contacts
+                    from a post-implant Cone-beam CT scan."""
+        self.parent.acknowledgementText = """This file was originally developed by Gabriele Arnulfo & Massimo Narizzano"""
+
         ## READ the configuration files under the Config/ directory
         self.parentPath = os.path.dirname(parent.path)
         self.configPath = self.parentPath + "/Config/deeto.config"
@@ -115,6 +112,7 @@ class ContactPositionEstimatorWidget(ScriptedLoadableModuleWidget):
     ### segmentationSetup #
     #######################################################################################
     def segmentationSetup(self):
+
         #### Collapsible Button --- General Frame
         self.segmentationCB = ctk.ctkCollapsibleButton()
         self.segmentationCB.text = "ContactPositionEstimator - Segmentation"
@@ -133,7 +131,7 @@ class ContactPositionEstimatorWidget(ScriptedLoadableModuleWidget):
         self.fiducialCBox.noneEnabled = True
         self.fiducialCBox.setMRMLScene(slicer.mrmlScene)
         self.fiducialCBox.setToolTip("Select a fiducial list")
-        #### Add fiducial to the Collapsible Buttonx
+        #### Add fiducial to the Collapsible Button
         self.segmentationFL.addRow("Fiducial List", self.fiducialCBox)
         #### Connect the fiducial list to the
         self.fiducialCBox.connect('currentNodeChanged(bool)', self.onfiducialCBox)
@@ -386,6 +384,9 @@ class ContactPositionEstimatorWidget(ScriptedLoadableModuleWidget):
         self.segmentationFL.takeAt(self.segmentationFL.count())
 
         last = len(self.electrodeList) - 1
+        self.createVTKModels.setParent(None)
+        self.createVTKModels.deleteLater()
+
         while last >= 0:
             self.electrodeList[last].delete()
             self.electrodeList.remove(self.electrodeList[last])

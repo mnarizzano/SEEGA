@@ -107,10 +107,6 @@ class GMPIComputationWidget(ScriptedLoadableModuleWidget):
         self.rightWhiteCBox.setMRMLScene( slicer.mrmlScene )
         self.rightWhiteCBox.setToolTip( "Pick the right pial." )
         self.gmpiFL.addRow("Right White: ", self.rightWhiteCBox)
-
-
-
-
         self.gmpiFL.addRow("Left White: ", self.leftWhiteCBox)
 
         #### Fiducials list Combo Box
@@ -326,22 +322,53 @@ class GMPIComputationLogic(ScriptedLoadableModuleLogic):
 
     def runMontageCreation(self,fids,gmpiThreshold):
 
-        # class Implant:
-        #     def __init__(self, electrodes=None):
-        #         if electrodes:
-        #             self.electrodes = electrodes
-        #         else:
-        #             self.electrodes = list()
-        #         self.distances = numpy.ndarray()
-        #
-        #     def computeDistances(self):
-        #         i = 0
-        #         j = 0
-        #         for el1 in self.electrodes:
-        #             for el2 in self.electrodes:
-        #                 self.distances[i,j] = numpy.sqrt( numpy.sum( (el1.chpos - el2.chpos)**2,axis=1) )
-        #                 i = i +1
-        #                 j = j +1
+        class Implant:
+            def __init__(self, electrodes=None):
+                if electrodes:
+                    self.electrodes = electrodes
+                    self.distances = numpy.ndarray(len(electrodes))
+                else:
+                    self.electrodes = list()
+                    self.distances = numpy.ndarray((1,1))
+
+            def append(self,electrode):
+                self.electrodes.append(electrode)
+
+            def computeDistances(self):
+                # re-allocare distances matrix
+                self.distances = numpy.ndarray( ( len(self.electrodes),len(self.electrodes) ) )
+                i = 0
+                j = 0
+                for el1 in self.electrodes:
+                    for el2 in self.electrodes:
+                        self.distances[i,j] = numpy.sqrt(numpy.sum((numpy.array(el1.chpos) - numpy.array(el2.chpos))**2))
+                        i += 1
+                    j += 1
+                    i = 0
+
+            def find(self,electrode):
+                try:
+                    return self.electrodes.index(electrode)
+                except ValueError:
+                    return None
+
+            def buildWhiteChannelsList(self):
+                whiteReferenceChannels = [ind for ind in xrange(0,len(self.electrodes)) \
+                                          if self.electrodes[ind].gmpi < -0.3 and self.electrodes[ind].ptd < 0 \
+                                          and not self.electrodes[ind].isSubCtx]
+                return whiteReferenceChannels
+
+            def findWhiteReference(self,electrode,gmpiThreshold):
+                srcIdx = self.electrodes.index(electrode)
+                if not electrode.isSubCtx:
+                    refIndices = self.buildWhiteChannelsList()
+                    refIdx = refIndices[self.distances[srcIdx,refIndices].argmin()]
+                    return self.electrodes[refIdx]
+                else:
+                    refIndices = self.buildWhiteChannelsList()
+                    refIdx = refIndices[self.distances[srcIdx,refIndices].argmin()]
+                    return self.electrodes[refIdx]
+
 
 
 
@@ -357,7 +384,14 @@ class GMPIComputationLogic(ScriptedLoadableModuleLogic):
                 currElecName = re.match("[A-Z]+[']?",self.label).group(0)
                 currChanNum = re.search("\d+", self.label).group(0)
                 refLabel = currElecName + str(int(currChanNum) + 1)
-                return refLabel
+                refElec = Electrode(refLabel)
+                return refElec
+
+            def __eq__(self,other):
+                if self.label == other.label:
+                    return True
+                else:
+                    return False
 
 
         # create table for BP and add it to the active scene
@@ -368,17 +402,19 @@ class GMPIComputationLogic(ScriptedLoadableModuleLogic):
         bpTableNode.AddColumn()
         slicer.mrmlScene.AddNode(bpTableNode)
 
-        # cwTableNode = slicer.vtkMRMLTableNode()
-        # cwTableNode.SetName("CW")
-        # cwTableNode.AddColumn()
-        # cwTableNode.AddColumn()
-        # cwTableNode.AddColumn()
-        # slicer.mrmlScene.AddNode(bpTableNode)
+        cwTableNode = slicer.vtkMRMLTableNode()
+        cwTableNode.SetName("CW")
+        cwTableNode.AddColumn()
+        cwTableNode.AddColumn()
+        cwTableNode.AddColumn()
+        slicer.mrmlScene.AddNode(cwTableNode)
 
 
         # read fids and populate a dictionary
-        implant = dict()
-        for elIdx in xrange(1,fids.GetNumberOfFiducials()):
+        # implantDict = dict()
+        implant = Implant()
+
+        for elIdx in xrange(0,fids.GetNumberOfFiducials()):
             chpos = [0.0, 0.0, 0.0]
             fids.GetNthFiducialPosition(elIdx,chpos)
             desc = fids.GetNthMarkupDescription(elIdx)
@@ -400,22 +436,35 @@ class GMPIComputationLogic(ScriptedLoadableModuleLogic):
             # and cortical channels.
             isSubCtx = any([descDict.has_key(x) for x in ('Hip','Put','Amy','Cau','Tal')])
 
-            implant[fids.GetNthFiducialLabel(elIdx)] = (chpos, gmpi, ptd, isSubCtx)
+            # implantDict[fids.GetNthFiducialLabel(elIdx)] = (chpos, gmpi, ptd, isSubCtx)
+            implant.append(Electrode(fids.GetNthFiducialLabel(elIdx),chpos,gmpi,ptd,isSubCtx))
 
-        # implant.computeDistances()
+        implant.computeDistances()
 
         # Create bipolar first
         row = 0
-        for srcLabel,info in implant.iteritems():
-            a = Electrode(srcLabel)
-            refLabel = a+1
+        for srcElec in implant.electrodes:
 
-            if refLabel in implant.keys():
-                bpLabel = srcLabel+'-'+refLabel
+            refElec = srcElec+1
+
+            if implant.find(refElec):
+                bpLabel = srcElec.label+'-'+refElec.label
                 bpTableNode.AddEmptyRow()
-                bpTableNode.SetCellText(row, 0, bpLabel)
-                bpTableNode.SetCellText(row, 1, srcLabel)
-                bpTableNode.SetCellText(row, 2, '-'+refLabel)
-                row = row + 1
+                bpTableNode.SetCellText(row, 0, str(bpLabel))
+                bpTableNode.SetCellText(row, 1, str(srcElec.label))
+                bpTableNode.SetCellText(row, 2, str('-'+refElec.label))
+                row += 1
 
         # Create Closest White scheme
+        row = 0
+        for srcElec in implant.electrodes:
+
+            refElec = implant.findWhiteReference(srcElec,gmpiThreshold.value)
+            if refElec and srcElec.gmpi > gmpiThreshold.value:
+                cwLabel = srcElec.label + '-' + refElec.label
+                cwTableNode.AddEmptyRow()
+                cwTableNode.SetCellText(row, 0, str(cwLabel))
+                cwTableNode.SetCellText(row, 1, str(srcElec.label))
+                cwTableNode.SetCellText(row, 2, str('-' + refElec.label))
+                row += 1
+
