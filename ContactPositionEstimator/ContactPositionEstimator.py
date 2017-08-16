@@ -258,30 +258,30 @@ class ContactPositionEstimatorWidget(ScriptedLoadableModuleWidget):
         self.createVTKModels = qt.QCheckBox("Create Shaft Model?")
 
         # SPLIT Fiducial Combobox
-        self.fiducialSplitBox = slicer.qMRMLNodeComboBox()
-        self.fiducialSplitBox.nodeTypes = (("vtkMRMLMarkupsFiducialNode"), "")
-        self.fiducialSplitBox.selectNodeUponCreation = False
-        self.fiducialSplitBox.addEnabled = False
-        self.fiducialSplitBox.removeEnabled = False
-        self.fiducialSplitBox.noneEnabled = True
-        self.fiducialSplitBox.setMRMLScene(slicer.mrmlScene)
-        self.fiducialSplitBox.setToolTip("Select a fiducial list")
+#        self.fiducialSplitBox = slicer.qMRMLNodeComboBox()
+#        self.fiducialSplitBox.nodeTypes = (("vtkMRMLMarkupsFiducialNode"), "")
+#        self.fiducialSplitBox.selectNodeUponCreation = False
+#        self.fiducialSplitBox.addEnabled = False
+#        self.fiducialSplitBox.removeEnabled = False
+#        self.fiducialSplitBox.noneEnabled = True
+#        self.fiducialSplitBox.setMRMLScene(slicer.mrmlScene)
+#        self.fiducialSplitBox.setToolTip("Select a fiducial list")
 
         # SPLIT Fiducials Button
-        self.splitFiducialPB = qt.QPushButton("Split Fiducial List")
-        self.splitFiducialPB.toolTip = "Split Fiducial file, one for each electrode"
-        self.splitFiducialPB.enabled = True
+#        self.splitFiducialPB = qt.QPushButton("Split Fiducial List")
+#        self.splitFiducialPB.toolTip = "Split Fiducial file, one for each electrode"
+#        self.splitFiducialPB.enabled = True
 
         horzGroupLayout = qt.QHBoxLayout()
         horzGroupLayout.addWidget(self.startSegmentationPB)
         horzGroupLayout.addWidget(self.createVTKModels)
 
         self.segmentationFL.addRow("", horzGroupLayout)
-        self.segmentationFL.addRow("", self.fiducialSplitBox)
-        self.segmentationFL.addRow("", self.splitFiducialPB)
+#        self.segmentationFL.addRow("", self.fiducialSplitBox)
+#        self.segmentationFL.addRow("", self.splitFiducialPB)
 
         # connections
-        self.splitFiducialPB.connect('clicked(bool)', self.onsplitFiducialClick)
+#        self.splitFiducialPB.connect('clicked(bool)', self.onsplitFiducialClick)
         self.startSegmentationPB.connect('clicked(bool)', self.onstartSegmentationPB)
 
     #######################################################################################
@@ -310,51 +310,51 @@ class ContactPositionEstimatorWidget(ScriptedLoadableModuleWidget):
     #######################################################################################
     # onSplitFiducialClick
     #######################################################################################
-    def onsplitFiducialClick(self):
-        """ onSplitFiducialClick  """
-
-        def uniquify(seq):
-            # order preserving
-            checked = []
-            for e in seq:
-                if e not in checked:
-                    checked.append(e)
-            return checked
-
-        # read get the fiducial file reconstructed
-        fiducialData = self.fiducialSplitBox.currentNode()
-
-        # Get channel names
-        chLabels = [fiducialData.GetNthFiducialLabel(i) for i in xrange(fiducialData.GetNumberOfFiducials())]
-
-        # Extract electrode name from channel names
-        elLabels = [re.match('[A-Z]*\'?', x).group(0) for x in chLabels]
-        uniqueElLabels = uniquify(elLabels)
-
-        # count for each electrode name the number of segmented contacts
-        elChCounts = [elLabels.count(x) for x in uniqueElLabels]
-
-        print "SPLITTING FIDUCIAL FILES"
-
-        offset = 0
-        for elIdx in xrange(len(uniqueElLabels)):
-
-            elLabel = uniqueElLabels[elIdx]
-            newFids = slicer.util.getNode(slicer.modules.markups.logic().AddNewFiducialNode(elLabel))
-
-            for chIdx in xrange(elChCounts[elIdx]):
-                # we have to create a separate fiducial file for
-                # each electrode and populate with corresponding
-                # channel positions and labels
-                P = [0.0, 0.0, 0.0]
-                fiducialData.GetNthFiducialPosition(chIdx + offset, P)
-                newFids.AddFiducial(P[0], P[1], P[2])
-                newFids.SetNthFiducialLabel(chIdx, fiducialData.GetNthFiducialLabel(chIdx + offset))
-                newFids.SetNthMarkupDescription(chIdx, fiducialData.GetNthMarkupDescription(chIdx + offset))
-
-            slicer.modules.markups.logic().SetAllMarkupsLocked(newFids, True)
-            offset += elChCounts[elIdx]
-        print "DONE"
+#    def onsplitFiducialClick(self):
+#        """ onSplitFiducialClick  """
+#
+#        def uniquify(seq):
+#            # order preserving
+#            checked = []
+#            for e in seq:
+#                if e not in checked:
+#                    checked.append(e)
+#            return checked
+#
+#        # read get the fiducial file reconstructed
+#        fiducialData = self.fiducialSplitBox.currentNode()
+#
+#        # Get channel names
+#        chLabels = [fiducialData.GetNthFiducialLabel(i) for i in xrange(fiducialData.GetNumberOfFiducials())]
+#
+#        # Extract electrode name from channel names
+#        elLabels = [re.match('[A-Z]*\'?', x).group(0) for x in chLabels]
+#        uniqueElLabels = uniquify(elLabels)
+#
+#        # count for each electrode name the number of segmented contacts
+#        elChCounts = [elLabels.count(x) for x in uniqueElLabels]
+#
+#        print "SPLITTING FIDUCIAL FILES"
+#
+#        offset = 0
+#        for elIdx in xrange(len(uniqueElLabels)):
+#
+#            elLabel = uniqueElLabels[elIdx]
+#            newFids = slicer.util.getNode(slicer.modules.markups.logic().AddNewFiducialNode(elLabel))
+#
+#            for chIdx in xrange(elChCounts[elIdx]):
+#                # we have to create a separate fiducial file for
+#                # each electrode and populate with corresponding
+#                # channel positions and labels
+#                P = [0.0, 0.0, 0.0]
+#                fiducialData.GetNthFiducialPosition(chIdx + offset, P)
+#                newFids.AddFiducial(P[0], P[1], P[2])
+#                newFids.SetNthFiducialLabel(chIdx, fiducialData.GetNthFiducialLabel(chIdx + offset))
+#                newFids.SetNthMarkupDescription(chIdx, fiducialData.GetNthMarkupDescription(chIdx + offset))
+#
+#            slicer.modules.markups.logic().SetAllMarkupsLocked(newFids, True)
+#            offset += elChCounts[elIdx]
+#        print "DONE"
 
     #######################################################################################
     # clearTable
