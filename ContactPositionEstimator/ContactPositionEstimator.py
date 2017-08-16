@@ -532,7 +532,7 @@ class ContactPositionEstimatorLogic(ScriptedLoadableModuleLogic):
     by specifying a 'fileType'attribute to the optional 'properties' dictionary.
     """
         from slicer import app
-        properties["nodeID"] = node.GetID();
+        properties["nodeID"] = node.GetID()
         properties["fileName"] = filename
         if hasattr(properties, "fileType"):
             filetype = properties["fileType"]
@@ -559,12 +559,13 @@ class Electrode():
         self.target = []
         self.entry = []
 
-        #### Crea a new GroupBOX i.e. a line
+
+        #### Create a new GroupBOX i.e. a line
         self.row = qt.QGroupBox(configurationCB)
         self.hlayout = qt.QHBoxLayout(self.row)
         self.hlayout.setMargin(1)
 
-        #### Crea a new label
+        #### Create a new label
         self.name = qt.QLabel(name, self.row)
         self.name.setMaximumWidth(hsize[0])
         self.name.setMaximumHeight(20)
@@ -619,6 +620,12 @@ class Electrode():
         modelIdx = self.model.findText(elecModel)
         if modelIdx >= 0:
             self.model.setCurrentIndex(modelIdx)
+
+    def updateInitialPoints(self,target,entry):
+        if self.entry != entry:
+            self.entry = entry
+        if self.target != target:
+            self.target = target
 
     #######################################################################################
     ### delete
