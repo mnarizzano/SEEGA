@@ -1,5 +1,7 @@
 # SEEGA
+
 [//]:# (![alt tag](https://raw.githubusercontent.com/mnarizzano/SEEGA/master/SEEG_Assistant.png))
+
 To cite the work please refer to:
 
 1. Narizzano M., Arnulfo G., Ricci S., Toselli B., Canessa A., Tisdall M., Fato M. M., Cardinale F. “SEEG Assistant: a 3DSlicer extension to support epilepsy surgery” BMC Bioinformatics (2017) doi;10.1186/s12859-017-1545-8, In Press
