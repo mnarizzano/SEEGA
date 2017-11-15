@@ -376,11 +376,11 @@ class ContactPositionEstimatorWidget(ScriptedLoadableModuleWidget):
         self.segmentationFL.takeAt(self.segmentationFL.count())
         self.segmentationFL.takeAt(self.segmentationFL.count())
 
-        self.splitFiducialPB.setParent(None)
-        self.splitFiducialPB.deleteLater()
+        #self.splitFiducialPB.setParent(None)
+        #self.splitFiducialPB.deleteLater()
         self.segmentationFL.takeAt(self.segmentationFL.count())
-        self.fiducialSplitBox.setParent(None)
-        self.fiducialSplitBox.deleteLater()
+        #self.fiducialSplitBox.setParent(None)
+        #self.fiducialSplitBox.deleteLater()
         self.segmentationFL.takeAt(self.segmentationFL.count())
 
         last = len(self.electrodeList) - 1
