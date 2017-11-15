@@ -1,6 +1,6 @@
 # SEEGA
 
-[//]:# (![alt tag](https://raw.githubusercontent.com/mnarizzano/SEEGA/master/SEEG_Assistant.png))
+![alt tag](https://raw.githubusercontent.com/mnarizzano/SEEGA/master/SEEG_Assistant.png)
 
 To cite the work please refer to:
 
