@@ -92,6 +92,12 @@ class FinalizerWidget(ScriptedLoadableModuleWidget):
         self.channelFileLE.setMaximumWidth(200)
         self.channelFileLE.setFixedWidth(300)
 
+        badChannelList = slicer.qSlicerSimpleMarkupsWidget()
+        badChannelList.setMRMLScene(slicer.mrmlScene)
+        badChannelList.setCurrentNode(slicer.util.getNode('recon'))
+
+        self.finalizerFLSave.addWidget(badChannelList)
+
         #### Buttons Layout
         self.channelFileHBL = qt.QHBoxLayout()
         self.channelFileHBL.addWidget(self.channelFileLE)
@@ -225,10 +231,13 @@ class FinalizerWidget(ScriptedLoadableModuleWidget):
         print "RUN Montage Creation"
         FinalizerLogic().runMontageCreation(self.tableBox.currentNode(),self.channelFile)
 
-
         print "END Montage Creation"
-        self.saveMontagePB.enabled = True
+        # for the moment is not implemented correctly
+        # moreover, it might not be useful at all ...
+        # thus I'll leave it disabled and take time to think about it
+        self.saveMontagePB.enabled = False
         slicer.util.showStatusMessage("END Montage Creation")
+
     def onChannelFileTB(self):
         fileName = qt.QFileDialog.getOpenFileName()
         self.channelFileLE.setText(fileName)
@@ -383,7 +392,7 @@ class FinalizerLogic(ScriptedLoadableModuleLogic):
             except ValueError:
                 continue
 
-            if elIdx:
+            if elIdx and fids.GetNthFiducialSelected(elIdx):
                 chpos = [0.0, 0.0, 0.0]
                 fids.GetNthFiducialPosition(elIdx,chpos)
                 desc = fids.GetNthMarkupDescription(elIdx)
