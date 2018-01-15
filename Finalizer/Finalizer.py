@@ -269,7 +269,7 @@ class FinalizerLogic(ScriptedLoadableModuleLogic):
                 self.electrodes.append(electrode)
 
             def computeDistances(self):
-                # re-allocare distances matrix
+                # re-allocate distances matrix
                 self.distances = numpy.ndarray( ( len(self.electrodes),len(self.electrodes) ) )
                 i = 0
                 j = 0
@@ -363,16 +363,22 @@ class FinalizerLogic(ScriptedLoadableModuleLogic):
         # read the list of channels which the
         # signals have been recorded from
         channelList = []
+        count = 0
         with open(channelFile,"r") as file:
             # skip first line
             file.readline()
             for line in file:
-                if '[REFERENCE]' in line:
+                # need to find a better approach then count > 255 which
+                # now simply is based on the observation that 21E files  
+                # are built this long.
+                if '[REFERENCE]' in line or count > 255:
                     break
                 else:
+                    count = count + 1
                     channelName = line.split('=')[1]
                     channelName = channelName.strip('\n').strip('\r')
                     channelList.append(channelName)
+
 
         # channelList now contains the recorded channels only
         # in the recorded order too
