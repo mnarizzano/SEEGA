@@ -45,8 +45,10 @@ class BrainZoneDetectorWidget(ScriptedLoadableModuleWidget):
 
         # [TODO]
         # Si potrebbe avere un file di configurazione che contiene eventualmente un path alla colorlut
-        # Se non e'vuoto allora lo prendo se no prendo questo di default
-        self.lutPath = os.path.join(slicer.app.slicerHome, 'share/FreeSurfer/FreeSurferColorLUT20120827.txt')
+        # Se non e' vuoto allora lo prendo se no prendo questo di default
+        self.lutPath = (os.path.join(slicer.app.slicerHome, 'share/FreeSurfer/FreeSurferColorLUT20120827.txt'),\
+                       os.path.join(slicer.app.slicerHome, 'share/FreeSurfer/Yeo2011_7Networks_ColorLUT.txt'))
+
         print self.lutPath
         # [END TODO]
 
@@ -88,6 +90,14 @@ class BrainZoneDetectorWidget(ScriptedLoadableModuleWidget):
         self.fidsSelectorZone.setToolTip("Select a fiducial list")
         self.zoneDetectionLayout.addRow("Fiducial : ", self.fidsSelectorZone)
 
+        self.lutSelector = qt.QComboBox()
+        # instead of filling hardwired values
+        # we can check share/Freesurfer folder and
+        # fill selector with available files
+        self.lutSelector.addItem('FreesurferColorLUT')
+        self.lutSelector.addItem('Yeo7')
+
+
         self.ROISize = qt.QLineEdit("7")
         self.ROISize.setToolTip("Define side length of cubic region centered in contact centroid")
         self.ROISize.setInputMask("D")
@@ -98,6 +108,7 @@ class BrainZoneDetectorWidget(ScriptedLoadableModuleWidget):
         self.zoneButton.enabled = True
 
         self.zoneDetectionLayout.addRow("Spherical Region Side Length:", self.ROISize)
+        self.zoneDetectionLayout.addRow(self.lutSelector)
         self.zoneDetectionLayout.addRow(self.zoneButton)
 
         if atlasNode:
@@ -116,7 +127,7 @@ class BrainZoneDetectorWidget(ScriptedLoadableModuleWidget):
         print "RUN Zone Detection Algorithm"
         BrainZoneDetectorLogic().runZoneDetection(self.fidsSelectorZone.currentNode(), \
                                                   self.atlasInputSelector.currentNode(), \
-                                                  self.lutPath, int(self.ROISize.text))
+                                                  self.lutPath, int(self.ROISize.text),self.lutSelector.currentIndex)
         print "END Zone Detection Algorithm"
         slicer.util.showStatusMessage("END Zone Detection")
 
@@ -137,7 +148,7 @@ class BrainZoneDetectorLogic(ScriptedLoadableModuleLogic):
         # Create a Progress Bar
         self.pb = qt.QProgressBar()
 
-    def runZoneDetection(self, fids, inputAtlas, colorLut, sideLength):
+    def runZoneDetection(self, fids, inputAtlas, colorLut, sideLength,lutIdx):
         # initialize variables that will hold the number of fiducials
         nFids = fids.GetNumberOfFiducials()
         # the volumetric atlas
@@ -146,13 +157,13 @@ class BrainZoneDetectorLogic(ScriptedLoadableModuleLogic):
         ras2vox_atlas = vtk.vtkMatrix4x4()
         inputAtlas.GetRASToIJKMatrix(ras2vox_atlas)
 
-        # read freesurfer color LUT there could possibly
-        # already exist these values within 3DSlicer modules
+        # read freesurfer color LUT. It could possibly
+        # already exists within 3DSlicer modules
         # but in python was too easy to read if from scratch that I simply
         # read it again.
         # FSLUT will hold for each brain area its tag and name
         FSLUT = {}
-        with open(colorLut, 'r') as f:
+        with open(colorLut[lutIdx], 'r') as f:
             for line in f:
                 if not re.match('^#', line) and len(line) > 10:
                     lineTok = re.split('\s+', line)
