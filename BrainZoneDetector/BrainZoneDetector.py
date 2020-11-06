@@ -7,6 +7,7 @@ import numpy
 import collections
 import logging
 import json
+#from future.utils import iteritems
 
 
 #
@@ -42,14 +43,15 @@ class BrainZoneDetectorWidget(ScriptedLoadableModuleWidget):
 
     def setup(self):
         ScriptedLoadableModuleWidget.setup(self)
+       # print(slicer.app.slicerHome)
 
         # [TODO]
         # Si potrebbe avere un file di configurazione che contiene eventualmente un path alla colorlut
         # Se non e' vuoto allora lo prendo se no prendo questo di default
-        self.lutPath = (os.path.join(slicer.app.slicerHome, 'share/FreeSurfer/FreeSurferColorLUT20120827.txt'),\
-                       os.path.join(slicer.app.slicerHome, 'share/FreeSurfer/Yeo2011_7Networks_ColorLUT.txt'))
+        self.lutPath = (os.path.join(slicer.app.slicerHome, 'Extensions-29402/SEEGA/FreeSurferColorLUT20120827.txt'),\
+                       os.path.join(slicer.app.slicerHome, 'Extensions-29402/SEEGA/Yeo2011_7Networks_ColorLUT.txt'))
 
-        print self.lutPath
+       # print (self.lutPath)
         # [END TODO]
 
         atlasNode = slicer.mrmlScene.GetNodesByName('aparc*').GetItemAsObject(0)
@@ -64,8 +66,8 @@ class BrainZoneDetectorWidget(ScriptedLoadableModuleWidget):
 
         ### Select Atlas
         self.atlasInputSelector = slicer.qMRMLNodeComboBox()
-        self.atlasInputSelector.nodeTypes = ("vtkMRMLLabelMapVolumeNode","vtkMRMLScalarVolumeNode")
-        #self.atlasInputSelector.addAttribute("vtkMRMLScalarVolumeNode", "LabelMap", 0)
+        self.atlasInputSelector.nodeTypes = ["vtkMRMLLabelMapVolumeNode","vtkMRMLScalarVolumeNode"]
+     #   self.atlasInputSelector.addAttribute("vtkMRMLScalarVolumeNode", "LabelMap", 0)
         self.atlasInputSelector.selectNodeUponCreation = True
         self.atlasInputSelector.addEnabled = False
         self.atlasInputSelector.removeEnabled = False
@@ -81,7 +83,7 @@ class BrainZoneDetectorWidget(ScriptedLoadableModuleWidget):
         self.dialog.setToolTip("Pick the input to the algorithm.")
 
         self.fidsSelectorZone = slicer.qMRMLNodeComboBox()
-        self.fidsSelectorZone.nodeTypes = (("vtkMRMLMarkupsFiducialNode"), "")
+        self.fidsSelectorZone.nodeTypes = [("vtkMRMLMarkupsFiducialNode"), ""]
         self.fidsSelectorZone.selectNodeUponCreation = False
         self.fidsSelectorZone.addEnabled = False
         self.fidsSelectorZone.removeEnabled = False
@@ -124,11 +126,11 @@ class BrainZoneDetectorWidget(ScriptedLoadableModuleWidget):
     #######################################################################################
     def onZoneButton(self):
         slicer.util.showStatusMessage("START Zone Detection")
-        print "RUN Zone Detection Algorithm"
+        print ("RUN Zone Detection Algorithm")
         BrainZoneDetectorLogic().runZoneDetection(self.fidsSelectorZone.currentNode(), \
                                                   self.atlasInputSelector.currentNode(), \
                                                   self.lutPath, int(self.ROISize.text),self.lutSelector.currentIndex)
-        print "END Zone Detection Algorithm"
+        print ("END Zone Detection Algorithm")
         slicer.util.showStatusMessage("END Zone Detection")
 
     def cleanup(self):
@@ -145,14 +147,16 @@ class BrainZoneDetectorLogic(ScriptedLoadableModuleLogic):
   """
 
     def __init__(self):
+        " "
         # Create a Progress Bar
         self.pb = qt.QProgressBar()
 
     def runZoneDetection(self, fids, inputAtlas, colorLut, sideLength,lutIdx):
         # initialize variables that will hold the number of fiducials
         nFids = fids.GetNumberOfFiducials()
+
         # the volumetric atlas
-        atlas = slicer.util.array(inputAtlas.GetName())
+        atlas = slicer.util.array(inputAtlas.GetName())    
         # an the transformation matrix from RAS coordinte to Voxels
         ras2vox_atlas = vtk.vtkMatrix4x4()
         inputAtlas.GetRASToIJKMatrix(ras2vox_atlas)
@@ -171,9 +175,10 @@ class BrainZoneDetectorLogic(ScriptedLoadableModuleLogic):
 
         with open(os.path.join(os.path.dirname(__file__), './Resources/parc_fullnames.json')) as dataParcNames:
             parcNames = json.load(dataParcNames)
-
+          #  print(parcNames)
         with open(os.path.join(os.path.dirname(__file__), './Resources/parc_shortnames.json')) as dataParcAcronyms:
             parcAcronyms = json.load(dataParcAcronyms)
+          #  print(parcAcronyms)
 
         # Initialize the progress bar pb
         self.pb.setRange(0, nFids)
@@ -185,15 +190,19 @@ class BrainZoneDetectorLogic(ScriptedLoadableModuleLogic):
         slicer.app.processEvents()
 
         listParcNames = [x for v in parcNames.values() for x in v]
+      #  print(listParcNames)
         listParcAcron = [x for v in parcAcronyms.values() for x in v]
 
-        for i in xrange(nFids):
+
+        for i in range(nFids):
+
             # update progress bar
             self.pb.setValue(i + 1)
             slicer.app.processEvents()
 
             # Only for Active Fiducial points the GMPI is computed
             if fids.GetNthFiducialSelected(i) == True:
+           # if 1==1:
 
                 # instantiate the variable which holds the point
                 currContactCentroid = [0, 0, 0]
@@ -226,12 +235,15 @@ class BrainZoneDetectorLogic(ScriptedLoadableModuleLogic):
 
                 # Find the unique values on the matrix above
                 uniqueValues = numpy.unique(patchValues)
-
+                
                 # Flatten the patch value and create a tuple
-                patchValues = tuple(patchValues.flatten(1))
+                patchValues = tuple(patchValues.flatten())
+
 
                 voxWhite = patchValues.count(2) + patchValues.count(41)
+
                 voxGray = len(patchValues) - voxWhite
+
                 PTD = float(voxGray - voxWhite) / (voxGray + voxWhite)
 
                 # Create an array of frequency for each unique value
@@ -239,6 +251,7 @@ class BrainZoneDetectorLogic(ScriptedLoadableModuleLogic):
 
                 # Compute the max frequency
                 totPercentage = numpy.sum(itemfreq)
+
 
                 # Recover the real patch names
                 patchNames = [re.sub('((ctx_.h_)|(Right|Left)-(Cerebral-)?)', '', FSLUT[pValues]) for pValues in uniqueValues]
@@ -254,17 +267,25 @@ class BrainZoneDetectorLogic(ScriptedLoadableModuleLogic):
                     else:
                         patchAcron.append(currPatchName)
 
+             #   print(i)
+              #  print(currPatchName)
                 # Create the zones
+
                 parcels = dict(zip(itemfreq, patchAcron))
 
                 # prepare parcellation string with percentage of values
                 # within the ROI centered in currContactCentroid
                 # [round( float(k) / totPercentage * 100 ) for k,v in parcels.iteritems()]
                 ordParcels = collections.OrderedDict(sorted(parcels.items(), reverse=True))
+
                 anatomicalPositionsString = [','.join([v, str(round(float(k) / totPercentage * 100))]) for k, v in
-                                             ordParcels.iteritems()]
+                                             ordParcels.items()]
+
+            
                 anatomicalPositionsString.append('PTD, {:.2f}'.format(PTD))
 
                 # Preserve if some old description was already there
-                fids.SetNthMarkupDescription(i, fids.GetNthMarkupDescription(i) + " " + ','.join(
+
+                fids.SetNthControlPointDescription(i, fids.GetNthControlPointDescription(i) + " " + ','.join(
                     anatomicalPositionsString))
+
