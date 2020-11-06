@@ -148,7 +148,7 @@ class ContactPositionEstimatorWidget(ScriptedLoadableModuleWidget):
         self.captionGB = qt.QGroupBox(self.segmentationCB)
         self.captionBL = qt.QHBoxLayout(self.captionGB)
         self.captionBL.setMargin(1)
-        for i in (xrange(len(self.tableCaption))):
+        for i in (range(len(self.tableCaption))):
             a = qt.QLabel(self.tableCaption[i], self.captionGB)
             a.setMaximumWidth(self.tableHsize[i])
             a.setMaximumHeight(20)
@@ -181,54 +181,64 @@ class ContactPositionEstimatorWidget(ScriptedLoadableModuleWidget):
         operationLog = ""  # error/warning Log string
         self.fids = self.fiducialCBox.currentNode()
         self.electrodeList = []
-
+        
         # here we fill electrode list using fiducials
-        for i in xrange(self.fids.GetNumberOfFiducials()):
+
+        for i in range(self.fids.GetNumberOfFiducials()):
             if self.fids.GetNthFiducialSelected(i) == True:
                 P2 = [0.0, 0.0, 0.0]
                 self.fids.GetNthFiducialPosition(i, P2)
                 # [WARNING] The fiducial name convention is hard coded, change please[/WARNING]#
                 # replace name with _1 or 1 with empty char
                 self.name = re.sub(r"_?1", "", self.fids.GetNthFiducialLabel(i))
+
                 # find the electrode in list with the same name
                 el = [x for x in self.electrodeList if str(x.name.text) == self.name]
+
                 if len(el) > 0:
+
                     if (len(el[0].target) > 0):
                         # (2.c.II)  more points than expected
                         operationLog += "WAR: \"" + self.name + "\" has defined more than 2 times"
                     P1 = el[0].entry
                     el[0].target = P2
+
                     distance_P2_P1 = (pow(P2[0], 2.0) + pow(P2[1], 2.0) + pow(P2[2], 2.0)) - \
                                      (pow(P1[0], 2.0) + pow(P1[1], 2.0) + pow(P1[2], 2.0))
                     if distance_P2_P1 > 0:
                         el[0].entry = P2
                         el[0].target = P1
                 else:
+
                     # (2.b) for each point pair create an Electrode object containing:
                     #       name, target and entry coordinates and the flag
-                    # Add the electrode Line to the collapsible button (update the GUI)
+                    # Add the electrode Line to the collapsible button (update the GUI)                    
+                    g=Electrode(self.name, self.segmentationCB, self.models, self.tableHsize)
                     self.electrodeList.append(Electrode(self.name, self.segmentationCB, \
                                                         self.models, self.tableHsize))
                     self.electrodeList[len(self.electrodeList) - 1].entry = P2
 
                     # (2.c.i) Look for missing entry/target,
         el = [x for x in self.electrodeList if (len(x.target) == 0)]
-        for i in xrange(len(el)):
+
+        for i in range(len(el)):
             operationLog += "ERR: \"" + el[i].name.text + "\" Missing entry or target"
             el[i].delete()
             self.electrodeList.remove(el[i])
 
         # here electrodeList should have all the electrode objects in the list
         # we sort the electrode in list alphabetically
-        self.electrodeList = sorted(self.electrodeList,key=lambda (x): x.name.text)
+        self.electrodeList = sorted(self.electrodeList,key=lambda x: x.name.text)
 
         # Link the electrode to the Form
+
         for elec in self.electrodeList:
             elec.computeLength()
             elec.setElectrodeModel(self.models)
             self.segmentationFL.addRow("", elec.row)
 
         # notify error
+
         slicer.util.showStatusMessage(operationLog)
         if len(self.electrodeList) == 0:
             return
@@ -245,7 +255,6 @@ class ContactPositionEstimatorWidget(ScriptedLoadableModuleWidget):
         self.ctVolumeCB.showChildNodeTypes = False
         self.ctVolumeCB.setMRMLScene(slicer.mrmlScene)
         self.ctVolumeCB.setToolTip("Pick the input to the algorithm.")
-
         self.volumeCtLabel = qt.QLabel("CT Volume")
         self.segmentationFL.addRow(self.volumeCtLabel, self.ctVolumeCB)
 
@@ -299,12 +308,12 @@ class ContactPositionEstimatorWidget(ScriptedLoadableModuleWidget):
     #######################################################################################
     def onstartSegmentationPB(self):
         slicer.util.showStatusMessage("START SEGMENTATION")
-        print "RUN SEGMENTATION ALGORITHM "
+        print ("RUN SEGMENTATION ALGORITHM ")
         ContactPositionEstimatorLogic().runSegmentation(self.electrodeList, self.ctVolumeCB.currentNode(), \
                                                         slicer.modules.ContactPositionEstimatorInstance.parentPath, \
                                                         slicer.modules.ContactPositionEstimatorInstance.deetoExecutablePath, \
                                                         self.models, self.createVTKModels)
-        print "END RUN SEGMENTATION ALGORITHM "
+        print ("END RUN SEGMENTATION ALGORITHM ")
         slicer.util.showStatusMessage("END SEGMENTATION")
 
     #######################################################################################
@@ -423,6 +432,7 @@ class ContactPositionEstimatorLogic(ScriptedLoadableModuleLogic):
             return
 
         ### COMPUTE THE THRESHOLD the 45% of points not null(0.0)
+
         im = volume.GetImageData()
         # linearize the 3D image in a vector
         vector = vtk.util.numpy_support.vtk_to_numpy(im.GetPointData().GetScalars())
@@ -435,14 +445,22 @@ class ContactPositionEstimatorLogic(ScriptedLoadableModuleLogic):
 
         ### CREATE A NEW FIDUCIAL LIST CALLED ...... [TODO]
         mlogic = slicer.modules.markups.logic()
+        
+        
+        ###my code####
+        Gnode=mlogic.GetDefaultMarkupsDisplayNode()
+        Gnode.SetColor(0.39, 0.78, 0.78)
+        Gnode.SetTextScale(1.3)
+        Gnode.SetGlyphScale(1.5)
+        Gnode.SetSelectedColor(0.39, 1.0, 0.39)
 
         ###
         ### [TODO] Accrocchio, non so come cambiare questi parametri solo
         ### per il nodo corrente, invece che di default
-        mlogic.SetDefaultMarkupsDisplayNodeTextScale(1.3)
-        mlogic.SetDefaultMarkupsDisplayNodeGlyphScale(1.5)
-        mlogic.SetDefaultMarkupsDisplayNodeColor(0.39, 0.78, 0.78)  # AZZURRO
-        mlogic.SetDefaultMarkupsDisplayNodeSelectedColor(0.39, 1.0, 0.39)  # VERDONE
+        #mlogic.SetDefaultMarkupsDisplayNodeTextScale(1.3)
+        #mlogic.SetDefaultMarkupsDisplayNodeGlyphScale(1.5)
+        #mlogic.SetDefaultMarkupsDisplayNodeColor(0.39, 0.78, 0.78)  # AZZURRO 
+        #mlogic.SetDefaultMarkupsDisplayNodeSelectedColor(0.39, 1.0, 0.39)  # VERDONE # error 
 
         fidNode = slicer.util.getNode(mlogic.AddNewFiducialNode("recon"))
 
@@ -455,23 +473,27 @@ class ContactPositionEstimatorLogic(ScriptedLoadableModuleLogic):
         self.pb.show()
         self.pb.setValue(0)
         slicer.app.processEvents()
-
         # For each electrode "e":
-        for i in xrange(len(elList)):
+        for i in range(len(elList)):
             tFlag = "-l" if (elList[i].tailCheckBox.isChecked() == True) else "-t"
             hFlag = "-h" if (elList[i].headCheckBox.isChecked() == True) else "-e"
+            
 
+            
             # Construct the cmdLine to run the segmentation on "e"
             cmdLine = [str(deetoExe), '-s', str(threshold), '-ct', str(self.tmpVolumeFile), \
                        hFlag, str(-1 * elList[i].entry[0]), str(-1 * elList[i].entry[1]), \
                        str(elList[i].entry[2]), tFlag, \
                        str(-1 * elList[i].target[0]), str(-1 * elList[i].target[1]), \
-                       str(elList[i].target[2]), '-m'] + \
-                      map(str, models[elList[i].model.currentText][:-1])
-            print cmdLine
+                       str(elList[i].target[2]), '-m']+ \
+                      list(map(str, models[elList[i].model.currentText][:-1]))
+            print(cmdLine)       
             # RUN the command line cmdLine.
             # [NOTE] : I have used Popen since subprocess.check_output wont work at the moment
             # It Looks a problem of returning code from deetoS
+          #  cmdLine='/Users/busria/Downloads/SEEGA-master/ContactPositionEstimator/DeetoS/deeto-macos-static', '-s', '1036.0', '-ct', '/Users/busria/Downloads/SEEGA-master/ContactPositionEstimator/Tmp/tmp.nii.gz', '-e', '-62.764', '-34.941', '21.575', '-t', '-33.391', '-36.819', '-2.354', '-m', '10', '2.0', '0.8', '1.5', '1.5', '1.5', '1.5', '1.5', '1.5', '1.5', '1.5', '1.5'
+          #  p=subprocess.Popen(cmdLine, stdout=subprocess.PIPE)
+
             points = subprocess.Popen(cmdLine, stdout=subprocess.PIPE).communicate()[0].splitlines()
             # print points
 
@@ -559,25 +581,26 @@ class Electrode():
         self.target = []
         self.entry = []
 
-
         #### Create a new GroupBOX i.e. a line
         self.row = qt.QGroupBox(configurationCB)
         self.hlayout = qt.QHBoxLayout(self.row)
         self.hlayout.setMargin(1)
-
         #### Create a new label
         self.name = qt.QLabel(name, self.row)
         self.name.setMaximumWidth(hsize[0])
         self.name.setMaximumHeight(20)
         self.hlayout.addWidget(self.name)
-
         # Eletrode Length
         self.length = 0
 
         #### Set the model list combo box
         self.model = qt.QComboBox(self.row)
-        self.keys = models.keys()
+
+        self.keys = list(models.keys())
+
+
         self.keys.sort(reverse=True)
+
         self.model.addItems(self.keys)
 
         self.model.setMaximumWidth(hsize[1])
@@ -599,6 +622,7 @@ class Electrode():
         self.headCheckBox.setStyleSheet("qproperty-alignment: AlignCenter;")
         self.hlayout.addWidget(self.headCheckBox)
 
+
     def computeLength(self):
         if len(self.entry) is 0 or len(self.target) is 0:
             self.length = 0
@@ -610,8 +634,8 @@ class Electrode():
     def setElectrodeModel(self,availableModels):
         # availableModels is a dict with elec name as key
         minLength = 100
-        elecModel = availableModels.keys()[0]
-        for k,v in availableModels.iteritems():
+        elecModel = list(availableModels.keys())[0]
+        for k,v in availableModels.items():
             elecModelLength = float(v[-1])
             currMinLength = abs(self.length-elecModelLength)
             if minLength > currMinLength:
