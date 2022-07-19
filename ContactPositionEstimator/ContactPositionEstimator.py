@@ -461,6 +461,7 @@ class ContactPositionEstimatorLogic(ScriptedLoadableModuleLogic):
             tFlag = "-l" if (elList[i].tailCheckBox.isChecked() == True) else "-t"
             hFlag = "-h" if (elList[i].headCheckBox.isChecked() == True) else "-e"
             # Construct the cmdLine to run the segmentation on "e"
+
             cmdLine = [str(deetoExe), '-s', str(threshold), '-ct', str(self.tmpVolumeFile), \
                        hFlag, str(-1 * elList[i].entry[0]), str(-1 * elList[i].entry[1]), \
                        str(elList[i].entry[2]), tFlag, \
