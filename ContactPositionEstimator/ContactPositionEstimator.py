@@ -467,7 +467,7 @@ class ContactPositionEstimatorLogic(ScriptedLoadableModuleLogic):
                        str(elList[i].entry[2]), tFlag, \
                        str(-1 * elList[i].target[0]), str(-1 * elList[i].target[1]), \
                        str(elList[i].target[2]), '-m'] + \
-                      map(str, models[elList[i].model.currentText][:-1])
+                      list(map(str, models[elList[i].model.currentText][:-1]))
             print cmdLine
             # RUN the command line cmdLine.
             # [NOTE] : I have used Popen since subprocess.check_output wont work at the moment
