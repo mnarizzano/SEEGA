@@ -514,7 +514,7 @@ class ContactPositionEstimatorLogic(ScriptedLoadableModuleLogic):
                 slicer.mrmlScene.AddNode(model)
 
             # Lock all markup
-            mlogic.SetAllMarkupsLocked(fidNode, True)
+            slicer.modules.markups.logic().SetAllMarkupsLocked(fidNode, True)
 
             # update progress bar
             self.pb.setValue(i + 1)
