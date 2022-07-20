@@ -577,8 +577,9 @@ class Electrode():
 
         #### Set the model list combo box
         self.model = qt.QComboBox(self.row)
-        self.keys = models.keys()
-        self.keys.sort(reverse=True)
+        self.keys = sorted(models, reverse=True)
+        #self.keys = models.keys()
+        #self.keys.sort(reverse=True)
         self.model.addItems(self.keys)
 
         self.model.setMaximumWidth(hsize[1])
