@@ -601,7 +601,7 @@ class Electrode():
         self.hlayout.addWidget(self.headCheckBox)
 
     def computeLength(self):
-        if len(self.entry) is 0 or len(self.target) is 0:
+        if len(self.entry) == 0 or len(self.target) == 0:
             self.length = 0
         tmpEP = numpy.array(self.entry)
         tmpTP = numpy.array(self.target)
