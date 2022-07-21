@@ -148,7 +148,7 @@ class ContactPositionEstimatorWidget(ScriptedLoadableModuleWidget):
         self.captionGB = qt.QGroupBox(self.segmentationCB)
         self.captionBL = qt.QHBoxLayout(self.captionGB)
         self.captionBL.setMargin(1)
-        for i in (xrange(len(self.tableCaption))):
+        for i in (range(len(self.tableCaption))):
             a = qt.QLabel(self.tableCaption[i], self.captionGB)
             a.setMaximumWidth(self.tableHsize[i])
             a.setMaximumHeight(20)
@@ -183,7 +183,7 @@ class ContactPositionEstimatorWidget(ScriptedLoadableModuleWidget):
         self.electrodeList = []
 
         # here we fill electrode list using fiducials
-        for i in xrange(self.fids.GetNumberOfFiducials()):
+        for i in range(self.fids.GetNumberOfFiducials()):
             if self.fids.GetNthFiducialSelected(i) == True:
                 P2 = [0.0, 0.0, 0.0]
                 self.fids.GetNthFiducialPosition(i, P2)
@@ -213,14 +213,14 @@ class ContactPositionEstimatorWidget(ScriptedLoadableModuleWidget):
 
                     # (2.c.i) Look for missing entry/target,
         el = [x for x in self.electrodeList if (len(x.target) == 0)]
-        for i in xrange(len(el)):
+        for i in range(len(el)):
             operationLog += "ERR: \"" + el[i].name.text + "\" Missing entry or target"
             el[i].delete()
             self.electrodeList.remove(el[i])
 
         # here electrodeList should have all the electrode objects in the list
         # we sort the electrode in list alphabetically
-        self.electrodeList = sorted(self.electrodeList,key=lambda (x): x.name.text)
+        self.electrodeList = sorted(self.electrodeList,key=lambda x: x.name.text)
 
         # Link the electrode to the Form
         for elec in self.electrodeList:
@@ -299,12 +299,12 @@ class ContactPositionEstimatorWidget(ScriptedLoadableModuleWidget):
     #######################################################################################
     def onstartSegmentationPB(self):
         slicer.util.showStatusMessage("START SEGMENTATION")
-        print "RUN SEGMENTATION ALGORITHM "
+        print ("RUN SEGMENTATION ALGORITHM ")
         ContactPositionEstimatorLogic().runSegmentation(self.electrodeList, self.ctVolumeCB.currentNode(), \
                                                         slicer.modules.ContactPositionEstimatorInstance.parentPath, \
                                                         slicer.modules.ContactPositionEstimatorInstance.deetoExecutablePath, \
                                                         self.models, self.createVTKModels)
-        print "END RUN SEGMENTATION ALGORITHM "
+        print ("END RUN SEGMENTATION ALGORITHM ")
         slicer.util.showStatusMessage("END SEGMENTATION")
 
     #######################################################################################
@@ -457,7 +457,7 @@ class ContactPositionEstimatorLogic(ScriptedLoadableModuleLogic):
         slicer.app.processEvents()
 
         # For each electrode "e":
-        for i in xrange(len(elList)):
+        for i in range(len(elList)):
             tFlag = "-l" if (elList[i].tailCheckBox.isChecked() == True) else "-t"
             hFlag = "-h" if (elList[i].headCheckBox.isChecked() == True) else "-e"
             # Construct the cmdLine to run the segmentation on "e"
@@ -468,7 +468,7 @@ class ContactPositionEstimatorLogic(ScriptedLoadableModuleLogic):
                        str(-1 * elList[i].target[0]), str(-1 * elList[i].target[1]), \
                        str(elList[i].target[2]), '-m'] + \
                       map(str, models[elList[i].model.currentText][:-1])
-            print cmdLine
+            print (cmdLine)
             # RUN the command line cmdLine.
             # [NOTE] : I have used Popen since subprocess.check_output wont work at the moment
             # It Looks a problem of returning code from deetoS
@@ -577,8 +577,9 @@ class Electrode():
 
         #### Set the model list combo box
         self.model = qt.QComboBox(self.row)
-        self.keys = models.keys()
-        self.keys.sort(reverse=True)
+        self.keys = sorted(models, reverse=True)
+        #self.keys = models.keys()
+        #self.keys.sort(reverse=True)
         self.model.addItems(self.keys)
 
         self.model.setMaximumWidth(hsize[1])
@@ -611,7 +612,7 @@ class Electrode():
     def setElectrodeModel(self,availableModels):
         # availableModels is a dict with elec name as key
         minLength = 100
-        elecModel = availableModels.keys()[0]
+        elecModel = list(availableModels.keys())[0]
         for k,v in availableModels.items():
             elecModelLength = float(v[-1])
             currMinLength = abs(self.length-elecModelLength)
