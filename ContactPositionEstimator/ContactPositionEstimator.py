@@ -486,7 +486,7 @@ class ContactPositionEstimatorLogic(ScriptedLoadableModuleLogic):
             for p in range(0, (len(points) - 1), 3):
                 a = fidNode.AddFiducial(float(points[p]), float(points[p + 1]), float(points[p + 2]))
                 fidNode.SetNthFiducialLabel(a, name + str((p / 3) + 1))
-                fidNode.SetNthControlPointDescription(a, elList[i].model.currentText)
+                fidNode.SetNthMarkupDescription(a, elList[i].model.currentText)
 
             ### For each electrode we create a line from the start point to the last + 3mm
             ### Look for two points p1 and p3 starting from p1 and p2 (first and last point segmented
@@ -608,7 +608,7 @@ class Electrode():
         self.hlayout.addWidget(self.headCheckBox)
 
     def computeLength(self):
-        if len(self.entry) is 0 or len(self.target) is 0:
+        if len(self.entry) == 0 or len(self.target) == 0:
             self.length = 0
         tmpEP = numpy.array(self.entry)
         tmpTP = numpy.array(self.target)
