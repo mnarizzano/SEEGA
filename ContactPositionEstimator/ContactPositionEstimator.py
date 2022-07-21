@@ -434,15 +434,21 @@ class ContactPositionEstimatorLogic(ScriptedLoadableModuleLogic):
         threshold = n_vector[int(n_vector.size * 0.45)]
 
         ### CREATE A NEW FIDUCIAL LIST CALLED ...... [TODO]
-        mlogic = slicer.modules.markups.logic()
+        #mlogic = slicer.modules.markups.logic()
+        mlogic = slicer.modules.markups.logic().GetDefaultMarkupsDisplayNode()
 
         ###
         ### [TODO] Accrocchio, non so come cambiare questi parametri solo
         ### per il nodo corrente, invece che di default
-        mlogic.SetDefaultMarkupsDisplayNodeTextScale(1.3)
-        mlogic.SetDefaultMarkupsDisplayNodeGlyphScale(1.5)
-        mlogic.SetDefaultMarkupsDisplayNodeColor(0.39, 0.78, 0.78)  # AZZURRO
-        mlogic.SetDefaultMarkupsDisplayNodeSelectedColor(0.39, 1.0, 0.39)  # VERDONE
+        #mlogic.SetDefaultMarkupsDisplayNodeTextScale(1.3)
+        #mlogic.SetDefaultMarkupsDisplayNodeGlyphScale(1.5)
+        #mlogic.SetDefaultMarkupsDisplayNodeColor(0.39, 0.78, 0.78)  # AZZURRO
+        #mlogic.SetDefaultMarkupsDisplayNodeSelectedColor(0.39, 1.0, 0.39)  # VERDONE
+
+        mlogic.SetTextScale(1.3)
+        mlogic.SetGlyphScale(1.5)
+        mlogic.SetColor(0.39, 0.78, 0.78)  # AZZURRO
+        mlogic.SetSelectedColor(0.39, 1.0, 0.39)  # VERDONE
 
         fidNode = slicer.util.getNode(mlogic.AddNewFiducialNode("recon"))
 
