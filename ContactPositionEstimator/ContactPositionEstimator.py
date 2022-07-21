@@ -148,7 +148,7 @@ class ContactPositionEstimatorWidget(ScriptedLoadableModuleWidget):
         self.captionGB = qt.QGroupBox(self.segmentationCB)
         self.captionBL = qt.QHBoxLayout(self.captionGB)
         self.captionBL.setMargin(1)
-        for i in (xrange(len(self.tableCaption))):
+        for i in (range(len(self.tableCaption))):
             a = qt.QLabel(self.tableCaption[i], self.captionGB)
             a.setMaximumWidth(self.tableHsize[i])
             a.setMaximumHeight(20)
@@ -183,7 +183,7 @@ class ContactPositionEstimatorWidget(ScriptedLoadableModuleWidget):
         self.electrodeList = []
 
         # here we fill electrode list using fiducials
-        for i in xrange(self.fids.GetNumberOfFiducials()):
+        for i in range(self.fids.GetNumberOfFiducials()):
             if self.fids.GetNthFiducialSelected(i) == True:
                 P2 = [0.0, 0.0, 0.0]
                 self.fids.GetNthFiducialPosition(i, P2)
@@ -213,7 +213,7 @@ class ContactPositionEstimatorWidget(ScriptedLoadableModuleWidget):
 
                     # (2.c.i) Look for missing entry/target,
         el = [x for x in self.electrodeList if (len(x.target) == 0)]
-        for i in xrange(len(el)):
+        for i in range(len(el)):
             operationLog += "ERR: \"" + el[i].name.text + "\" Missing entry or target"
             el[i].delete()
             self.electrodeList.remove(el[i])
@@ -457,7 +457,7 @@ class ContactPositionEstimatorLogic(ScriptedLoadableModuleLogic):
         slicer.app.processEvents()
 
         # For each electrode "e":
-        for i in xrange(len(elList)):
+        for i in range(len(elList)):
             tFlag = "-l" if (elList[i].tailCheckBox.isChecked() == True) else "-t"
             hFlag = "-h" if (elList[i].headCheckBox.isChecked() == True) else "-e"
             # Construct the cmdLine to run the segmentation on "e"
