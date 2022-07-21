@@ -49,7 +49,7 @@ class BrainZoneDetectorWidget(ScriptedLoadableModuleWidget):
         self.lutPath = (os.path.join(slicer.app.slicerHome, 'share/FreeSurfer/FreeSurferColorLUT20120827.txt'),\
                        os.path.join(slicer.app.slicerHome, 'share/FreeSurfer/Yeo2011_7Networks_ColorLUT.txt'))
 
-        print self.lutPath
+        print (self.lutPath)
         # [END TODO]
 
         atlasNode = slicer.mrmlScene.GetNodesByName('aparc*').GetItemAsObject(0)
@@ -124,11 +124,11 @@ class BrainZoneDetectorWidget(ScriptedLoadableModuleWidget):
     #######################################################################################
     def onZoneButton(self):
         slicer.util.showStatusMessage("START Zone Detection")
-        print "RUN Zone Detection Algorithm"
+        print ("RUN Zone Detection Algorithm")
         BrainZoneDetectorLogic().runZoneDetection(self.fidsSelectorZone.currentNode(), \
                                                   self.atlasInputSelector.currentNode(), \
                                                   self.lutPath, int(self.ROISize.text),self.lutSelector.currentIndex)
-        print "END Zone Detection Algorithm"
+        print ("END Zone Detection Algorithm")
         slicer.util.showStatusMessage("END Zone Detection")
 
     def cleanup(self):
