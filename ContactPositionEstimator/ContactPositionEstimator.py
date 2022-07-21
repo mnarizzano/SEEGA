@@ -220,7 +220,7 @@ class ContactPositionEstimatorWidget(ScriptedLoadableModuleWidget):
 
         # here electrodeList should have all the electrode objects in the list
         # we sort the electrode in list alphabetically
-        self.electrodeList = sorted(self.electrodeList,key=lambda (x): x.name.text)
+        self.electrodeList = sorted(self.electrodeList,key=lambda x: x.name.text)
 
         # Link the electrode to the Form
         for elec in self.electrodeList:
@@ -299,12 +299,12 @@ class ContactPositionEstimatorWidget(ScriptedLoadableModuleWidget):
     #######################################################################################
     def onstartSegmentationPB(self):
         slicer.util.showStatusMessage("START SEGMENTATION")
-        print "RUN SEGMENTATION ALGORITHM "
+        print ("RUN SEGMENTATION ALGORITHM ")
         ContactPositionEstimatorLogic().runSegmentation(self.electrodeList, self.ctVolumeCB.currentNode(), \
                                                         slicer.modules.ContactPositionEstimatorInstance.parentPath, \
                                                         slicer.modules.ContactPositionEstimatorInstance.deetoExecutablePath, \
                                                         self.models, self.createVTKModels)
-        print "END RUN SEGMENTATION ALGORITHM "
+        print ("END RUN SEGMENTATION ALGORITHM ")
         slicer.util.showStatusMessage("END SEGMENTATION")
 
     #######################################################################################
@@ -468,7 +468,7 @@ class ContactPositionEstimatorLogic(ScriptedLoadableModuleLogic):
                        str(-1 * elList[i].target[0]), str(-1 * elList[i].target[1]), \
                        str(elList[i].target[2]), '-m'] + \
                       map(str, models[elList[i].model.currentText][:-1])
-            print cmdLine
+            print (cmdLine)
             # RUN the command line cmdLine.
             # [NOTE] : I have used Popen since subprocess.check_output wont work at the moment
             # It Looks a problem of returning code from deetoS
