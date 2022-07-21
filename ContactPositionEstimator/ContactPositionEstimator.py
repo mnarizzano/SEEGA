@@ -612,7 +612,7 @@ class Electrode():
     def setElectrodeModel(self,availableModels):
         # availableModels is a dict with elec name as key
         minLength = 100
-        elecModel = availableModels.keys()[0]
+        elecModel = list(availableModels.keys())[0]
         for k,v in availableModels.iteritems():
             elecModelLength = float(v[-1])
             currMinLength = abs(self.length-elecModelLength)
