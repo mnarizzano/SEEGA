@@ -181,7 +181,7 @@ class FinalizerWidget(ScriptedLoadableModuleWidget):
         # count for each electrode name the number of segmented contacts
         elChCounts = [elLabels.count(x) for x in uniqueElLabels]
 
-        print "SPLITTING FIDUCIAL FILES"
+        print ("SPLITTING FIDUCIAL FILES")
 
         offset = 0
         for elIdx in xrange(len(uniqueElLabels)):
@@ -201,7 +201,7 @@ class FinalizerWidget(ScriptedLoadableModuleWidget):
 
             slicer.modules.markups.logic().SetAllMarkupsLocked(newFids, True)
             offset += elChCounts[elIdx]
-        print "DONE"
+        print ("DONE")
     def onSaveMontageClick(self):
         # read the table
         # save it as brainstom compliant file
@@ -228,10 +228,10 @@ class FinalizerWidget(ScriptedLoadableModuleWidget):
         return True
     def onMontageCreation(self):
         slicer.util.showStatusMessage("START Montage Creation")
-        print "RUN Montage Creation"
+        print ("RUN Montage Creation")
         FinalizerLogic().runMontageCreation(self.tableBox.currentNode(),self.channelFile)
 
-        print "END Montage Creation"
+        print ("END Montage Creation")
         # for the moment is not implemented correctly
         # moreover, it might not be useful at all ...
         # thus I'll leave it disabled and take time to think about it
