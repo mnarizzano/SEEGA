@@ -94,7 +94,7 @@ class FinalizerWidget(ScriptedLoadableModuleWidget):
 
         badChannelList = slicer.qSlicerSimpleMarkupsWidget()
         badChannelList.setMRMLScene(slicer.mrmlScene)
-        badChannelList.setCurrentNode(slicer.mrmlScene.GetFirstNodeByName('recon'))
+        badChannelList.setCurrentNode(slicer.util.getNode('recon'))
 
         self.finalizerFLSave.addWidget(badChannelList)
 
