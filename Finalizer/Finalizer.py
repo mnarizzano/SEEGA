@@ -94,15 +94,7 @@ class FinalizerWidget(ScriptedLoadableModuleWidget):
 
         badChannelList = slicer.qSlicerSimpleMarkupsWidget()
         badChannelList.setMRMLScene(slicer.mrmlScene)
-        try:
-            targetNode = slicer.util.getNode('recon')
-            if targetNode.GetClassName() != newNodeClassName:
-                # target node incompatible, need to create a new one
-                slicer.mrmlScene.RemoveNode(targetNode)
-                targetNode = None
-        except slicer.util.MRMLNodeNotFoundException:
-            targetNode = None
-        badChannelList.setCurrentNode(targetNode)
+        badChannelList.setCurrentNode(slicer.mrmlScene.GetFirstNodeByName('recon'))
 
         self.finalizerFLSave.addWidget(badChannelList)
 
