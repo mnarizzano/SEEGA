@@ -181,7 +181,7 @@ class GMPIComputationWidget(ScriptedLoadableModuleWidget):
     #######################################################################################
     def onGMPIComputation(self):
         slicer.util.showStatusMessage("START GMPI Computation")
-        print "RUN GMPI Computation"
+        print ("RUN GMPI Computation")
         GMPIComputationLogic().runGMPIComputation(self.fiducialsCBox.currentNode(), \
                                                   self.leftPialCBox.currentNode(), \
                                                   self.rightPialCBox.currentNode(), \
@@ -189,7 +189,7 @@ class GMPIComputationWidget(ScriptedLoadableModuleWidget):
                                                   self.rightWhiteCBox.currentNode())
 
 
-        print "END GMPI Computation"
+        print ("END GMPI Computation")
         slicer.util.showStatusMessage("END GMPI Computation")
 
     # def onMontageCreation(self):
@@ -309,7 +309,7 @@ class GMPIComputationLogic(ScriptedLoadableModuleLogic):
 
                 # print ",".join([str(pialNearVtx),str(whiteNearVtx),str(currContactCentroid)])
                 gmpi=float("{0:.3f}".format(self.computeGmpi(currContactCentroid,pialNearVtx,whiteNearVtx)))
-                print fids.GetNthFiducialLabel(i)+" gmpi: "+ str(gmpi)
+                print (fids.GetNthFiducialLabel(i)+" gmpi: "+ str(gmpi))
 
                 self.descr = fids.GetNthMarkupDescription(i)
                 if self.descr[-1:] is ',':
