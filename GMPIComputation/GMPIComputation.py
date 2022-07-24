@@ -312,7 +312,7 @@ class GMPIComputationLogic(ScriptedLoadableModuleLogic):
                 print (fids.GetNthFiducialLabel(i)+" gmpi: "+ str(gmpi))
 
                 self.descr = fids.GetNthMarkupDescription(i)
-                if self.descr[-1:] is ',':
+                if self.descr[-1:] == ',':
                     fids.SetNthMarkupDescription(i,' '.join([self.descr,'GMPI,',str(gmpi)]))
                 else:
                     fids.SetNthMarkupDescription(i, ' '.join([self.descr, ', GMPI,', str(gmpi)]))
