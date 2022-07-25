@@ -13,6 +13,7 @@ import re
 import collections
 import json
 import math
+import platform
 
 """Uses ScriptedLoadableModule base class, available at:
 https://github.com/Slicer/Slicer/blob/master/Base/Python/slicer/ScriptedLoadableModule.py
@@ -44,12 +45,17 @@ class ContactPositionEstimator(ScriptedLoadableModule):
         self.configPath = self.parentPath + "/Config/deeto.config"
         self.electrodeTypesPath = self.parentPath + "/Config/electrodes.config"
 
-        # Locate the deeto executable path
+        # Locate the deeto executable path and choose the right version respect the platform system
         with open(self.configPath) as data_file:
             tmpConfigData = json.load(data_file)
-
-        self.deetoExecutablePath = self.parentPath + "/" + tmpConfigData["deeto"]
-
+            if platform.system() == "Darwin":
+                self.deetoExecutablePath = self.parentPath + "/" + tmpConfigData["deetoMac"]
+            elif platform.system() == "Windows":
+                self.deetoExecutablePath = self.parentPath + "/" + tmpConfigData["deetoWindows"]
+            elif platform.system() == "Linux":
+                self.deetoExecutablePath = self.parentPath + "/" + tmpConfigData["deetoLinux"]
+            else:
+                exit("Platform error")
 
 #########################################################################################
 ####                                                                                 ####
