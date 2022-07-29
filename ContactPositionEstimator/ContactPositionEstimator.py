@@ -8,12 +8,14 @@ import unittest
 import subprocess
 from __main__ import vtk, qt, ctk, slicer
 from slicer.ScriptedLoadableModule import *
-import numpy
+import numpy as np
 import re
 import collections
 import json
 import math
 import platform
+import sys
+import math as m
 
 """Uses ScriptedLoadableModule base class, available at:
 https://github.com/Slicer/Slicer/blob/master/Base/Python/slicer/ScriptedLoadableModule.py
@@ -451,7 +453,8 @@ class ContactPositionEstimatorLogic(ScriptedLoadableModuleLogic):
         #mlogic.SetDefaultMarkupsDisplayNodeColor(0.39, 0.78, 0.78)  # AZZURRO
         #mlogic.SetDefaultMarkupsDisplayNodeSelectedColor(0.39, 1.0, 0.39)  # VERDONE
 
-        mlogic.SetTextScale(1.3)
+        #mlogic.SetTextScale(1.3)
+        mlogic.SetTextScale(2.5)
         mlogic.SetGlyphScale(1.5)
         mlogic.SetColor(0.39, 0.78, 0.78)  # AZZURRO
         mlogic.SetSelectedColor(0.39, 1.0, 0.39)  # VERDONE
@@ -489,10 +492,6 @@ class ContactPositionEstimatorLogic(ScriptedLoadableModuleLogic):
 
             ### For each of the point returned by deeto we add it to the new markup fiducial
             name = elList[i].name.text
-            for p in range(0, (len(points) - 1), 3):
-                a = fidNode.AddFiducial(float(points[p]), float(points[p + 1]), float(points[p + 2]))
-                fidNode.SetNthFiducialLabel(a, name + str((p / 3) + 1))
-                fidNode.SetNthControlPointDescription(a, elList[i].model.currentText)
 
             ### For each electrode we create a line from the start point to the last + 3mm
             ### Look for two points p1 and p3 starting from p1 and p2 (first and last point segmented
@@ -505,6 +504,54 @@ class ContactPositionEstimatorLogic(ScriptedLoadableModuleLogic):
             p3[0] = p2[0] + (p2[0] - p1[0]) / delta * 3  # distance 3mm
             p3[1] = p2[1] + (p2[1] - p1[1]) / delta * 3  # distance 3mm
             p3[2] = p2[2] + (p2[2] - p1[2]) / delta * 3  # distance 3mm
+
+            for p in range(0, (len(points) - 1), 3):
+                a = fidNode.AddFiducial(float(points[p]), float(points[p + 1]), float(points[p + 2]))
+                fidNode.SetNthFiducialLabel(a, name + str((p / 3) + 1))
+                fidNode.SetNthControlPointDescription(a, elList[i].model.currentText)
+
+                ### Create a vtk cylinder
+                cylinderSource = vtk.vtkCylinderSource()
+                cylinderSource.SetCenter(0,0,0)
+                cylinderSource.SetHeight(list(models.values())[0][1])
+                cylinderSource.SetRadius(list(models.values())[0][2])
+                cylinderSource.SetResolution(100)
+                cylinderSource.Update()
+                ### Create a model of the cylinder to add to the scene
+                cylindermodel = slicer.vtkMRMLModelNode()
+                cylindermodel.SetName(name + "_direction")
+                cylindermodel.SetAndObservePolyData(cylinderSource.GetOutput())
+
+                #Create a Transform node for the model to copy the rotation
+                cylinderTS = slicer.vtkMRMLTransformNode()
+
+                ##compute the rotation
+                #Given the vector (p1,p3) i move it to the origin
+                vorigin = np.subtract(p1,p3)
+                #compute rotation matrix
+                R = self.rotMat(vorigin)
+                #from 3x3 matrix i transformit in a 4x4 matrix
+                matrix4 = self.mat3To4(R, float(points[p]), float(points[p + 1]), float(points[p + 2]))
+                #from 4x4 matrix, generate vtkmatrix4x4 object
+                rMatrix = self.mat4x4Gen(matrix4)
+                #add the rotation to the model
+                cylinderTS.SetAndObserveMatrixTransformToParent(rMatrix)
+
+                cylindermodelDisplay = slicer.vtkMRMLModelDisplayNode()
+                cylindermodelDisplay.SetSliceIntersectionVisibility(True)  # Hide in slice view
+                cylindermodelDisplay.SetVisibility(True)  # Show in 3D view
+                cylindermodelDisplay.SetColor(1, 0, 0)
+                cylindermodelDisplay.SetLineWidth(2)
+                cylindermodelDisplay.SetOpacity(0.5)
+
+                slicer.mrmlScene.AddNode(cylindermodelDisplay)
+                cylindermodel.SetAndObserveDisplayNodeID(cylindermodelDisplay.GetID())
+
+                slicer.mrmlScene.AddNode(cylinderTS)
+                cylindermodel.SetAndObserveTransformNodeID(cylinderTS.GetID())
+
+                slicer.mrmlScene.AddNode(cylindermodel)
+
             if createVTK.checked:
                 ### Create a vtk line
                 lineSource = vtk.vtkLineSource()
@@ -555,6 +602,51 @@ class ContactPositionEstimatorLogic(ScriptedLoadableModuleLogic):
 
         # def createModelList(self):
         #     self.electrodeModelist = list()
+
+    def mat4x4Gen(self, m):
+        rMatrix = vtk.vtkMatrix4x4()
+        for x in range(4):
+            for y in range(4):
+                rMatrix.SetElement(x, y, m[x][y])
+        return rMatrix
+
+    def mat3To4(self, m,x,y,z):
+        b = np.array([[0, 0, 0]])
+        c = np.concatenate((m, b), axis=0)
+        d = np.array([[x, y, z, 1]])
+        return np.concatenate((c, d.T), axis=1)
+
+    #compute euler angles from rotation matrix
+    def fromRotMat(self, R):
+        tol = sys.float_info.epsilon * 10
+
+        if abs(R.item(0, 0)) < tol and abs(R.item(1, 0)) < tol:
+            eul1 = 0
+            eul2 = m.atan2(-R.item(2, 0), R.item(0, 0))
+            eul3 = m.atan2(-R.item(1, 2), R.item(1, 1))
+        else:
+            eul1 = m.atan2(R.item(1, 0), R.item(0, 0))
+            sp = m.sin(eul1)
+            cp = m.cos(eul1)
+            eul2 = m.atan2(-R.item(2, 0), cp * R.item(0, 0) + sp * R.item(1, 0))
+            eul3 = m.atan2(sp * R.item(0, 2) - cp * R.item(1, 2), cp * R.item(1, 1) - sp * R.item(0, 1))
+
+        return eul3, eul2, eul1
+
+    def rotMat(self, vec2):
+        """ Find the rotation matrix that aligns vec1 to vec2
+        :param vec1: A 3d "source" vector
+        :param vec2: A 3d "destination" vector
+        :return mat: A transform matrix (3x3) which when applied to vec1, aligns it with vec2.
+        """
+        vec1 = [0,1,0]
+        a, b = (vec1 / np.linalg.norm(vec1)).reshape(3), (vec2 / np.linalg.norm(vec2)).reshape(3)
+        v = np.cross(a, b)
+        c = np.dot(a, b)
+        s = np.linalg.norm(v)
+        kmat = np.array([[0, -v[2], v[1]], [v[2], 0, -v[0]], [-v[1], v[0], 0]])
+        rotation_matrix = np.eye(3) + kmat + kmat.dot(kmat) * ((1 - c) / (s ** 2))
+        return rotation_matrix
 
 
 
@@ -616,10 +708,10 @@ class Electrode():
     def computeLength(self):
         if len(self.entry) == 0 or len(self.target) == 0:
             self.length = 0
-        tmpEP = numpy.array(self.entry)
-        tmpTP = numpy.array(self.target)
+        tmpEP = np.array(self.entry)
+        tmpTP = np.array(self.target)
         # compute euclidean distance
-        self.length = numpy.sqrt(numpy.sum((tmpEP-tmpTP)**2))
+        self.length = np.sqrt(np.sum((tmpEP-tmpTP)**2))
 
     def setElectrodeModel(self,availableModels):
         # availableModels is a dict with elec name as key
@@ -647,4 +739,3 @@ class Electrode():
     def delete(self):
         self.row.setParent(None)
         self.row.deleteLater()
-
