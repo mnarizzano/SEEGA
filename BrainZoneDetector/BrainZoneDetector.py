@@ -239,7 +239,7 @@ class BrainZoneDetectorLogic(ScriptedLoadableModuleLogic):
                 uniqueValues = numpy.unique(patchValues)
 
                 # Flatten the patch value and create a tuple
-                patchValues = tuple(patchValues.flatten(1))
+                patchValues = tuple(patchValues.flatten('f'))
 
                 voxWhite = patchValues.count(2) + patchValues.count(41)
                 voxGray = len(patchValues) - voxWhite
