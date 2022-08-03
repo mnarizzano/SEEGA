@@ -277,5 +277,5 @@ class BrainZoneDetectorLogic(ScriptedLoadableModuleLogic):
                 anatomicalPositionsString.append('PTD, {:.2f}'.format(PTD))
 
                 # Preserve if some old description was already there
-                fids.SetNthMarkupDescription(i, fids.GetNthMarkupDescription(i) + " " + ','.join(
+                fids.SetNthControlPointDescription(i, fids.GetNthMarkupDescription(i) + " " + ','.join(
                     anatomicalPositionsString))
