@@ -273,7 +273,7 @@ class BrainZoneDetectorLogic(ScriptedLoadableModuleLogic):
                 # [round( float(k) / totPercentage * 100 ) for k,v in parcels.iteritems()]
                 ordParcels = collections.OrderedDict(sorted(parcels.items(), reverse=True))
                 anatomicalPositionsString = [','.join([v, str(round(float(k) / totPercentage * 100))]) for k, v in
-                                             ordParcels.iteritems()]
+                                             ordParcels.items()]
                 anatomicalPositionsString.append('PTD, {:.2f}'.format(PTD))
 
                 # Preserve if some old description was already there
