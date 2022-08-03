@@ -7,7 +7,7 @@ import numpy
 import collections
 import logging
 import json
-
+import platform
 
 #
 # BrainZoneDetector
@@ -46,8 +46,17 @@ class BrainZoneDetectorWidget(ScriptedLoadableModuleWidget):
         # [TODO]
         # Si potrebbe avere un file di configurazione che contiene eventualmente un path alla colorlut
         # Se non e' vuoto allora lo prendo se no prendo questo di default
-        self.lutPath = (os.path.join(slicer.app.slicerHome, 'share/FreeSurfer/FreeSurferColorLUT20120827.txt'),\
-                       os.path.join(slicer.app.slicerHome, 'share/FreeSurfer/Yeo2011_7Networks_ColorLUT.txt'))
+        if platform.system() == "Darwin":
+            self.lutPath = (os.path.join(slicer.app.slicerHome, 'Extensions-30893/SlicerFreeSurfer/share/Slicer-5.0/qt-loadable-modules/FreeSurferImporter/FreeSurferColorLUT20120827.txt'),\
+                       os.path.join(slicer.app.slicerHome, 'Extensions-30893/SlicerFreeSurfer/share/Slicer-5.0/qt-loadable-modules/FreeSurferImporter/FreeSurferColorLUT20060522.txt'),\
+                       os.path.join(slicer.app.slicerHome, 'Extensions-30893/SlicerFreeSurfer/share/Slicer-5.0/qt-loadable-modules/FreeSurferImporter/FreeSurferColorLUT20150729.txt'),\
+                       os.path.join(slicer.app.slicerHome, 'Extensions-30893/SlicerFreeSurfer/share/Slicer-5.0/qt-loadable-modules/FreeSurferImporter/Simple_surface_labels2002.txt'))
+        else:
+            self.lutPath = (os.path.join(slicer.app.slicerHome,'NA-MIC/Extensions-30893/SlicerFreeSurfer/share/Slicer-5.0/qt-loadable-modules/FreeSurferImporter/FreeSurferColorLUT20120827.txt'), \
+                            os.path.join(slicer.app.slicerHome,'NA-MIC/Extensions-30893/SlicerFreeSurfer/share/Slicer-5.0/qt-loadable-modules/FreeSurferImporter/FreeSurferColorLUT20060522.txt'), \
+                            os.path.join(slicer.app.slicerHome,'NA-MIC/Extensions-30893/SlicerFreeSurfer/share/Slicer-5.0/qt-loadable-modules/FreeSurferImporter/FreeSurferColorLUT20150729.txt'), \
+                            os.path.join(slicer.app.slicerHome,'NA-MIC/Extensions-30893/SlicerFreeSurfer/share/Slicer-5.0/qt-loadable-modules/FreeSurferImporter/Simple_surface_labels2002.txt'))
+
 
         print (self.lutPath)
         # [END TODO]
@@ -94,8 +103,10 @@ class BrainZoneDetectorWidget(ScriptedLoadableModuleWidget):
         # instead of filling hardwired values
         # we can check share/Freesurfer folder and
         # fill selector with available files
-        self.lutSelector.addItem('FreesurferColorLUT')
-        self.lutSelector.addItem('Yeo7')
+        self.lutSelector.addItem('FreeSurferColorLUT20120827')
+        self.lutSelector.addItem('FreeSurferColorLUT20060522')
+        self.lutSelector.addItem('FreeSurferColorLUT20150729')
+        self.lutSelector.addItem('Simple_surface_labels2002')
 
 
         self.ROISize = qt.QLineEdit("7")
