@@ -198,7 +198,7 @@ class BrainZoneDetectorLogic(ScriptedLoadableModuleLogic):
         listParcNames = [x for v in parcNames.values() for x in v]
         listParcAcron = [x for v in parcAcronyms.values() for x in v]
 
-        for i in xrange(nFids):
+        for i in range(nFids):
             # update progress bar
             self.pb.setValue(i + 1)
             slicer.app.processEvents()
