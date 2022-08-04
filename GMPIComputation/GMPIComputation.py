@@ -238,7 +238,10 @@ class GMPIComputationLogic(ScriptedLoadableModuleLogic):
     ###  computeGMPI
     #######################################################################################
     def computeGmpi(self,contact,pial,white):
-        return (numpy.dot( (contact-white) , (pial - white) ) / numpy.linalg.norm((pial - white))**2 )
+        if (numpy.linalg.norm((pial - white)) ** 2 == 0):
+            return float('NaN')
+        else:
+            return (numpy.dot((contact - white), (pial - white)) / numpy.linalg.norm((pial - white)) ** 2)
 
     #######################################################################################
     ###  runGMPIComputation
