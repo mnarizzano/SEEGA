@@ -505,7 +505,7 @@ class ContactPositionEstimatorLogic(ScriptedLoadableModuleLogic):
             p3[2] = p2[2] + (p2[2] - p1[2]) / delta * 3  # distance 3mm
 
             for p in range(0, (len(points) - 1), 3):
-                a = fidNode.AddFiducial(float(points[p]), float(points[p + 1]), float(points[p + 2]))
+                a = fidNode.AddControlPoint(float(points[p]), float(points[p + 1]), float(points[p + 2]))
                 fidNode.SetNthFiducialLabel(a, name + str((p / 3) + 1))
                 fidNode.SetNthControlPointDescription(a, elList[i].model.currentText)
 
