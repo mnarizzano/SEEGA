@@ -172,7 +172,7 @@ class FinalizerWidget(ScriptedLoadableModuleWidget):
         fiducialData = self.fiducialSplitBox.currentNode()
 
         # Get channel names
-        chLabels = [fiducialData.GetNthFiducialLabel(i) for i in xrange(fiducialData.GetNumberOfFiducials())]
+        chLabels = [fiducialData.GetNthFiducialLabel(i) for i in range(fiducialData.GetNumberOfFiducials())]
 
         # Extract electrode name from channel names
         elLabels = [re.match('[A-Z]*\'?', x).group(0) for x in chLabels]
@@ -389,7 +389,7 @@ class FinalizerLogic(ScriptedLoadableModuleLogic):
         # we should iterate the channel list
         # and find relevant information in the fiducial file
         tmpImplant = []
-        for elIdx in xrange(0,fids.GetNumberOfFiducials()):
+        for elIdx in range(0,fids.GetNumberOfFiducials()):
             tmpImplant.append(fids.GetNthFiducialLabel(elIdx))
 
         for channel in channelList:
