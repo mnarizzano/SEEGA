@@ -184,12 +184,12 @@ class FinalizerWidget(ScriptedLoadableModuleWidget):
         print ("SPLITTING FIDUCIAL FILES")
 
         offset = 0
-        for elIdx in xrange(len(uniqueElLabels)):
+        for elIdx in range(len(uniqueElLabels)):
 
             elLabel = uniqueElLabels[elIdx]
             newFids = slicer.util.getNode(slicer.modules.markups.logic().AddNewFiducialNode(elLabel))
 
-            for chIdx in xrange(elChCounts[elIdx]):
+            for chIdx in range(elChCounts[elIdx]):
                 # we have to create a separate fiducial file for
                 # each electrode and populate with corresponding
                 # channel positions and labels
@@ -298,7 +298,7 @@ class FinalizerLogic(ScriptedLoadableModuleLogic):
 
             def buildWhiteChannelsList(self):
 
-                whiteReferenceChannels = [ind for ind in xrange(0,len(self.electrodes)) \
+                whiteReferenceChannels = [ind for ind in range(0,len(self.electrodes)) \
                                           if self.electrodes[ind].gmpi < -0.3 and self.electrodes[ind].ptd < 0 \
                                           and not self.electrodes[ind].isSubCtx]
                 return whiteReferenceChannels
