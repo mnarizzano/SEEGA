@@ -508,7 +508,7 @@ class ContactPositionEstimatorLogic(ScriptedLoadableModuleLogic):
                 a = fidNode.AddControlPoint(float(points[p]), float(points[p + 1]), float(points[p + 2]))
                 fidNode.SetNthFiducialLabel(a, name + str((p / 3) + 1))
                 fidNode.SetNthControlPointDescription(a, elList[i].model.currentText)
-
+                """
                 ### Create a vtk cylinder
                 cylinderSource = vtk.vtkCylinderSource()
                 cylinderSource.SetCenter(0,0,0)
@@ -550,7 +550,7 @@ class ContactPositionEstimatorLogic(ScriptedLoadableModuleLogic):
                 cylindermodel.SetAndObserveTransformNodeID(cylinderTS.GetID())
 
                 slicer.mrmlScene.AddNode(cylindermodel)
-
+                """
             if createVTK.checked:
                 ### Create a vtk line
                 lineSource = vtk.vtkLineSource()
