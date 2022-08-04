@@ -313,9 +313,9 @@ class GMPIComputationLogic(ScriptedLoadableModuleLogic):
 
                 self.descr = fids.GetNthControlPointDescription(i)
                 if self.descr[-1:] == ',':
-                    fids.SetNthMarkupDescription(i,' '.join([self.descr,'GMPI,',str(gmpi)]))
+                    fids.SetNthControlPointDescription(i,' '.join([self.descr,'GMPI,',str(gmpi)]))
                 else:
-                    fids.SetNthMarkupDescription(i, ' '.join([self.descr, ', GMPI,', str(gmpi)]))
+                    fids.SetNthControlPointDescription(i, ' '.join([self.descr, ', GMPI,', str(gmpi)]))
 
 
 
