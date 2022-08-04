@@ -197,7 +197,7 @@ class FinalizerWidget(ScriptedLoadableModuleWidget):
                 fiducialData.GetNthFiducialPosition(chIdx + offset, P)
                 newFids.AddFiducial(P[0], P[1], P[2])
                 newFids.SetNthFiducialLabel(chIdx, fiducialData.GetNthFiducialLabel(chIdx + offset))
-                newFids.SetNthMarkupDescription(chIdx, fiducialData.GetNthMarkupDescription(chIdx + offset))
+                newFids.SetNthControlPointDescription(chIdx, fiducialData.GetNthControlPointDescription(chIdx + offset))
 
             slicer.modules.markups.logic().SetAllMarkupsLocked(newFids, True)
             offset += elChCounts[elIdx]
@@ -401,7 +401,7 @@ class FinalizerLogic(ScriptedLoadableModuleLogic):
             if elIdx and fids.GetNthFiducialSelected(elIdx):
                 chpos = [0.0, 0.0, 0.0]
                 fids.GetNthFiducialPosition(elIdx,chpos)
-                desc = fids.GetNthMarkupDescription(elIdx)
+                desc = fids.GetNthControlPointDescription(elIdx)
                 desc = re.split(',', desc)
                 descDict = dict()
                 for k,v in zip(desc[::2],desc[1::2]):
