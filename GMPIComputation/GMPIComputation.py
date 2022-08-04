@@ -265,7 +265,7 @@ class GMPIComputationLogic(ScriptedLoadableModuleLogic):
         slicer.app.processEvents()
 
         # Compute GMPI for each fiducial
-        for i in xrange(fids.GetNumberOfFiducials()):
+        for i in range(fids.GetNumberOfFiducials()):
             # update progress bar
             self.pb.setValue(i+1)
             slicer.app.processEvents()
