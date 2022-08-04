@@ -407,18 +407,18 @@ class FinalizerLogic(ScriptedLoadableModuleLogic):
                 for k,v in zip(desc[::2],desc[1::2]):
                     descDict[k.strip()] = float(v)
 
-                if descDict.has_key('GMPI'):
+                if 'GMPI' in descDict:
                     gmpi = descDict['GMPI']
                 else:
                     gmpi = numpy.nan
-                if descDict.has_key('PTD'):
+                if 'PTD' in descDict:
                     ptd = descDict['PTD']
                 else:
                     ptd = numpy.nan
 
                 # we need to separate the anatomical names to differentiate between subcortical
                 # and cortical channels.
-                isSubCtx = any([descDict.has_key(x) for x in ('Hip','Put','Amy','Cau','Tal')])
+                isSubCtx = any([x in descDict for x in ('Hip','Put','Amy','Cau','Tal')])
 
                 # implantDict[fids.GetNthFiducialLabel(elIdx)] = (chpos, gmpi, ptd, isSubCtx)
                 implant.append(Electrode(fids.GetNthFiducialLabel(elIdx),chpos,gmpi,ptd,isSubCtx))
