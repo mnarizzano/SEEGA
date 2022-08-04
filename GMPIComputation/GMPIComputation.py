@@ -311,7 +311,7 @@ class GMPIComputationLogic(ScriptedLoadableModuleLogic):
                 gmpi=float("{0:.3f}".format(self.computeGmpi(currContactCentroid,pialNearVtx,whiteNearVtx)))
                 print (fids.GetNthFiducialLabel(i)+" gmpi: "+ str(gmpi))
 
-                self.descr = fids.GetNthMarkupDescription(i)
+                self.descr = fids.GetNthControlPointDescription(i)
                 if self.descr[-1:] == ',':
                     fids.SetNthMarkupDescription(i,' '.join([self.descr,'GMPI,',str(gmpi)]))
                 else:
