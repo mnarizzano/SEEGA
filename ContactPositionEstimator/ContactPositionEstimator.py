@@ -453,8 +453,8 @@ class ContactPositionEstimatorLogic(ScriptedLoadableModuleLogic):
         #mlogic.SetDefaultMarkupsDisplayNodeColor(0.39, 0.78, 0.78)  # AZZURRO
         #mlogic.SetDefaultMarkupsDisplayNodeSelectedColor(0.39, 1.0, 0.39)  # VERDONE
 
-        mlogic.SetTextScale(1.3)
-        mlogic.SetGlyphScale(1.5)
+        mlogic.SetTextScale(3.0)
+        mlogic.SetGlyphScale(3.0)
         mlogic.SetColor(0.39, 0.78, 0.78)  # AZZURRO
         mlogic.SetSelectedColor(0.39, 1.0, 0.39)  # VERDONE
 
