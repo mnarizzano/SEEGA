@@ -181,7 +181,7 @@ class GMPIComputationWidget(ScriptedLoadableModuleWidget):
     #######################################################################################
     def onGMPIComputation(self):
         slicer.util.showStatusMessage("START GMPI Computation")
-        print "RUN GMPI Computation"
+        print ("RUN GMPI Computation")
         GMPIComputationLogic().runGMPIComputation(self.fiducialsCBox.currentNode(), \
                                                   self.leftPialCBox.currentNode(), \
                                                   self.rightPialCBox.currentNode(), \
@@ -189,7 +189,7 @@ class GMPIComputationWidget(ScriptedLoadableModuleWidget):
                                                   self.rightWhiteCBox.currentNode())
 
 
-        print "END GMPI Computation"
+        print ("END GMPI Computation")
         slicer.util.showStatusMessage("END GMPI Computation")
 
     # def onMontageCreation(self):
@@ -238,7 +238,10 @@ class GMPIComputationLogic(ScriptedLoadableModuleLogic):
     ###  computeGMPI
     #######################################################################################
     def computeGmpi(self,contact,pial,white):
-        return (numpy.dot( (contact-white) , (pial - white) ) / numpy.linalg.norm((pial - white))**2 )
+        if (numpy.linalg.norm((pial - white)) ** 2 == 0):
+            return float('NaN')
+        else:
+            return (numpy.dot((contact - white), (pial - white)) / numpy.linalg.norm((pial - white)) ** 2)
 
     #######################################################################################
     ###  runGMPIComputation
@@ -265,7 +268,7 @@ class GMPIComputationLogic(ScriptedLoadableModuleLogic):
         slicer.app.processEvents()
 
         # Compute GMPI for each fiducial
-        for i in xrange(fids.GetNumberOfFiducials()):
+        for i in range(fids.GetNumberOfFiducials()):
             # update progress bar
             self.pb.setValue(i+1)
             slicer.app.processEvents()
@@ -309,13 +312,13 @@ class GMPIComputationLogic(ScriptedLoadableModuleLogic):
 
                 # print ",".join([str(pialNearVtx),str(whiteNearVtx),str(currContactCentroid)])
                 gmpi=float("{0:.3f}".format(self.computeGmpi(currContactCentroid,pialNearVtx,whiteNearVtx)))
-                print fids.GetNthFiducialLabel(i)+" gmpi: "+ str(gmpi)
+                print (fids.GetNthFiducialLabel(i)+" gmpi: "+ str(gmpi))
 
-                self.descr = fids.GetNthMarkupDescription(i)
-                if self.descr[-1:] is ',':
-                    fids.SetNthMarkupDescription(i,' '.join([self.descr,'GMPI,',str(gmpi)]))
+                self.descr = fids.GetNthControlPointDescription(i)
+                if self.descr[-1:] == ',':
+                    fids.SetNthControlPointDescription(i,' '.join([self.descr,'GMPI,',str(gmpi)]))
                 else:
-                    fids.SetNthMarkupDescription(i, ' '.join([self.descr, ', GMPI,', str(gmpi)]))
+                    fids.SetNthControlPointDescription(i, ' '.join([self.descr, ', GMPI,', str(gmpi)]))
 
 
 

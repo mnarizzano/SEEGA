@@ -7,7 +7,7 @@ import numpy
 import collections
 import logging
 import json
-
+import platform
 
 #
 # BrainZoneDetector
@@ -46,10 +46,19 @@ class BrainZoneDetectorWidget(ScriptedLoadableModuleWidget):
         # [TODO]
         # Si potrebbe avere un file di configurazione che contiene eventualmente un path alla colorlut
         # Se non e' vuoto allora lo prendo se no prendo questo di default
-        self.lutPath = (os.path.join(slicer.app.slicerHome, 'share/FreeSurfer/FreeSurferColorLUT20120827.txt'),\
-                       os.path.join(slicer.app.slicerHome, 'share/FreeSurfer/Yeo2011_7Networks_ColorLUT.txt'))
+        if platform.system() == "Darwin":
+            self.lutPath = (os.path.join(slicer.app.slicerHome, 'Extensions-30893/SlicerFreeSurfer/share/Slicer-5.0/qt-loadable-modules/FreeSurferImporter/FreeSurferColorLUT20120827.txt'),\
+                       #os.path.join(slicer.app.slicerHome, 'Extensions-30893/SlicerFreeSurfer/share/Slicer-5.0/qt-loadable-modules/FreeSurferImporter/FreeSurferColorLUT20060522.txt'),\
+                       os.path.join(slicer.app.slicerHome, 'Extensions-30893/SlicerFreeSurfer/share/Slicer-5.0/qt-loadable-modules/FreeSurferImporter/FreeSurferColorLUT20150729.txt'))
+                       #os.path.join(slicer.app.slicerHome, 'Extensions-30893/SlicerFreeSurfer/share/Slicer-5.0/qt-loadable-modules/FreeSurferImporter/Simple_surface_labels2002.txt'))
+        else:
+            self.lutPath = (os.path.join(slicer.app.slicerHome,'NA-MIC/Extensions-30893/SlicerFreeSurfer/share/Slicer-5.0/qt-loadable-modules/FreeSurferImporter/FreeSurferColorLUT20120827.txt'), \
+                            #os.path.join(slicer.app.slicerHome,'NA-MIC/Extensions-30893/SlicerFreeSurfer/share/Slicer-5.0/qt-loadable-modules/FreeSurferImporter/FreeSurferColorLUT20060522.txt'), \
+                            os.path.join(slicer.app.slicerHome,'NA-MIC/Extensions-30893/SlicerFreeSurfer/share/Slicer-5.0/qt-loadable-modules/FreeSurferImporter/FreeSurferColorLUT20150729.txt'))
+                            #os.path.join(slicer.app.slicerHome,'NA-MIC/Extensions-30893/SlicerFreeSurfer/share/Slicer-5.0/qt-loadable-modules/FreeSurferImporter/Simple_surface_labels2002.txt'))
 
-        print self.lutPath
+
+        print (self.lutPath)
         # [END TODO]
 
         atlasNode = slicer.mrmlScene.GetNodesByName('aparc*').GetItemAsObject(0)
@@ -94,8 +103,10 @@ class BrainZoneDetectorWidget(ScriptedLoadableModuleWidget):
         # instead of filling hardwired values
         # we can check share/Freesurfer folder and
         # fill selector with available files
-        self.lutSelector.addItem('FreesurferColorLUT')
-        self.lutSelector.addItem('Yeo7')
+        self.lutSelector.addItem('FreeSurferColorLUT20120827')
+        #self.lutSelector.addItem('FreeSurferColorLUT20060522')
+        self.lutSelector.addItem('FreeSurferColorLUT20150729')
+        #self.lutSelector.addItem('Simple_surface_labels2002')
 
 
         self.ROISize = qt.QLineEdit("7")
@@ -124,11 +135,11 @@ class BrainZoneDetectorWidget(ScriptedLoadableModuleWidget):
     #######################################################################################
     def onZoneButton(self):
         slicer.util.showStatusMessage("START Zone Detection")
-        print "RUN Zone Detection Algorithm"
+        print ("RUN Zone Detection Algorithm")
         BrainZoneDetectorLogic().runZoneDetection(self.fidsSelectorZone.currentNode(), \
                                                   self.atlasInputSelector.currentNode(), \
                                                   self.lutPath, int(self.ROISize.text),self.lutSelector.currentIndex)
-        print "END Zone Detection Algorithm"
+        print ("END Zone Detection Algorithm")
         slicer.util.showStatusMessage("END Zone Detection")
 
     def cleanup(self):
@@ -187,7 +198,7 @@ class BrainZoneDetectorLogic(ScriptedLoadableModuleLogic):
         listParcNames = [x for v in parcNames.values() for x in v]
         listParcAcron = [x for v in parcAcronyms.values() for x in v]
 
-        for i in xrange(nFids):
+        for i in range(nFids):
             # update progress bar
             self.pb.setValue(i + 1)
             slicer.app.processEvents()
@@ -228,7 +239,7 @@ class BrainZoneDetectorLogic(ScriptedLoadableModuleLogic):
                 uniqueValues = numpy.unique(patchValues)
 
                 # Flatten the patch value and create a tuple
-                patchValues = tuple(patchValues.flatten(1))
+                patchValues = tuple(patchValues.flatten('f'))
 
                 voxWhite = patchValues.count(2) + patchValues.count(41)
                 voxGray = len(patchValues) - voxWhite
@@ -262,9 +273,9 @@ class BrainZoneDetectorLogic(ScriptedLoadableModuleLogic):
                 # [round( float(k) / totPercentage * 100 ) for k,v in parcels.iteritems()]
                 ordParcels = collections.OrderedDict(sorted(parcels.items(), reverse=True))
                 anatomicalPositionsString = [','.join([v, str(round(float(k) / totPercentage * 100))]) for k, v in
-                                             ordParcels.iteritems()]
+                                             ordParcels.items()]
                 anatomicalPositionsString.append('PTD, {:.2f}'.format(PTD))
 
                 # Preserve if some old description was already there
-                fids.SetNthMarkupDescription(i, fids.GetNthMarkupDescription(i) + " " + ','.join(
+                fids.SetNthControlPointDescription(i, fids.GetNthControlPointDescription(i) + " " + ','.join(
                     anatomicalPositionsString))

@@ -94,7 +94,7 @@ class FinalizerWidget(ScriptedLoadableModuleWidget):
 
         badChannelList = slicer.qSlicerSimpleMarkupsWidget()
         badChannelList.setMRMLScene(slicer.mrmlScene)
-        badChannelList.setCurrentNode(slicer.util.getNode('recon'))
+        badChannelList.setCurrentNode(slicer.mrmlScene.GetFirstNodeByName('recon'))
 
         self.finalizerFLSave.addWidget(badChannelList)
 
@@ -172,7 +172,7 @@ class FinalizerWidget(ScriptedLoadableModuleWidget):
         fiducialData = self.fiducialSplitBox.currentNode()
 
         # Get channel names
-        chLabels = [fiducialData.GetNthFiducialLabel(i) for i in xrange(fiducialData.GetNumberOfFiducials())]
+        chLabels = [fiducialData.GetNthFiducialLabel(i) for i in range(fiducialData.GetNumberOfFiducials())]
 
         # Extract electrode name from channel names
         elLabels = [re.match('[A-Z]*\'?', x).group(0) for x in chLabels]
@@ -181,15 +181,15 @@ class FinalizerWidget(ScriptedLoadableModuleWidget):
         # count for each electrode name the number of segmented contacts
         elChCounts = [elLabels.count(x) for x in uniqueElLabels]
 
-        print "SPLITTING FIDUCIAL FILES"
+        print ("SPLITTING FIDUCIAL FILES")
 
         offset = 0
-        for elIdx in xrange(len(uniqueElLabels)):
+        for elIdx in range(len(uniqueElLabels)):
 
             elLabel = uniqueElLabels[elIdx]
             newFids = slicer.util.getNode(slicer.modules.markups.logic().AddNewFiducialNode(elLabel))
 
-            for chIdx in xrange(elChCounts[elIdx]):
+            for chIdx in range(elChCounts[elIdx]):
                 # we have to create a separate fiducial file for
                 # each electrode and populate with corresponding
                 # channel positions and labels
@@ -197,11 +197,11 @@ class FinalizerWidget(ScriptedLoadableModuleWidget):
                 fiducialData.GetNthFiducialPosition(chIdx + offset, P)
                 newFids.AddFiducial(P[0], P[1], P[2])
                 newFids.SetNthFiducialLabel(chIdx, fiducialData.GetNthFiducialLabel(chIdx + offset))
-                newFids.SetNthMarkupDescription(chIdx, fiducialData.GetNthMarkupDescription(chIdx + offset))
+                newFids.SetNthControlPointDescription(chIdx, fiducialData.GetNthControlPointDescription(chIdx + offset))
 
             slicer.modules.markups.logic().SetAllMarkupsLocked(newFids, True)
             offset += elChCounts[elIdx]
-        print "DONE"
+        print ("DONE")
     def onSaveMontageClick(self):
         # read the table
         # save it as brainstom compliant file
@@ -228,10 +228,10 @@ class FinalizerWidget(ScriptedLoadableModuleWidget):
         return True
     def onMontageCreation(self):
         slicer.util.showStatusMessage("START Montage Creation")
-        print "RUN Montage Creation"
+        print ("RUN Montage Creation")
         FinalizerLogic().runMontageCreation(self.tableBox.currentNode(),self.channelFile)
 
-        print "END Montage Creation"
+        print ("END Montage Creation")
         # for the moment is not implemented correctly
         # moreover, it might not be useful at all ...
         # thus I'll leave it disabled and take time to think about it
@@ -298,7 +298,7 @@ class FinalizerLogic(ScriptedLoadableModuleLogic):
 
             def buildWhiteChannelsList(self):
 
-                whiteReferenceChannels = [ind for ind in xrange(0,len(self.electrodes)) \
+                whiteReferenceChannels = [ind for ind in range(0,len(self.electrodes)) \
                                           if self.electrodes[ind].gmpi < -0.3 and self.electrodes[ind].ptd < 0 \
                                           and not self.electrodes[ind].isSubCtx]
                 return whiteReferenceChannels
@@ -389,7 +389,7 @@ class FinalizerLogic(ScriptedLoadableModuleLogic):
         # we should iterate the channel list
         # and find relevant information in the fiducial file
         tmpImplant = []
-        for elIdx in xrange(0,fids.GetNumberOfFiducials()):
+        for elIdx in range(0,fids.GetNumberOfFiducials()):
             tmpImplant.append(fids.GetNthFiducialLabel(elIdx))
 
         for channel in channelList:
@@ -401,24 +401,24 @@ class FinalizerLogic(ScriptedLoadableModuleLogic):
             if elIdx and fids.GetNthFiducialSelected(elIdx):
                 chpos = [0.0, 0.0, 0.0]
                 fids.GetNthFiducialPosition(elIdx,chpos)
-                desc = fids.GetNthMarkupDescription(elIdx)
+                desc = fids.GetNthControlPointDescription(elIdx)
                 desc = re.split(',', desc)
                 descDict = dict()
                 for k,v in zip(desc[::2],desc[1::2]):
                     descDict[k.strip()] = float(v)
 
-                if descDict.has_key('GMPI'):
+                if 'GMPI' in descDict:
                     gmpi = descDict['GMPI']
                 else:
                     gmpi = numpy.nan
-                if descDict.has_key('PTD'):
+                if 'PTD' in descDict:
                     ptd = descDict['PTD']
                 else:
                     ptd = numpy.nan
 
                 # we need to separate the anatomical names to differentiate between subcortical
                 # and cortical channels.
-                isSubCtx = any([descDict.has_key(x) for x in ('Hip','Put','Amy','Cau','Tal')])
+                isSubCtx = any([x in descDict for x in ('Hip','Put','Amy','Cau','Tal')])
 
                 # implantDict[fids.GetNthFiducialLabel(elIdx)] = (chpos, gmpi, ptd, isSubCtx)
                 implant.append(Electrode(fids.GetNthFiducialLabel(elIdx),chpos,gmpi,ptd,isSubCtx))
