@@ -79,6 +79,7 @@ class ContactPositionEstimatorWidget(ScriptedLoadableModuleWidget):
     ### Collapsible button, where are stored the information for the segmentation module
     ### for example the deeto executable location, etc...
     #######################################################################################
+
     def configurationSetup(self):
         #### Create a Collapsible Button
         self.setupCB = ctk.ctkCollapsibleButton()
@@ -218,7 +219,6 @@ class ContactPositionEstimatorWidget(ScriptedLoadableModuleWidget):
                     self.electrodeList.append(Electrode(self.name, self.segmentationCB, \
                                                         self.models, self.tableHsize))
                     self.electrodeList[len(self.electrodeList) - 1].entry = P2
-
                     # (2.c.i) Look for missing entry/target,
         el = [x for x in self.electrodeList if (len(x.target) == 0)]
         for i in range(len(el)):
@@ -470,6 +470,11 @@ class ContactPositionEstimatorLogic(ScriptedLoadableModuleLogic):
         self.pb.setValue(0)
         slicer.app.processEvents()
 
+        # list contains all cylinder vtk used to check if outside from the brain
+        listCylinderModel = list()
+        listCylinderDisplay = list()
+        listCylinderPos = list()
+
         # For each electrode "e":
         for i in range(len(elList)):
             tFlag = "-l" if (elList[i].tailCheckBox.isChecked() == True) else "-t"
@@ -504,11 +509,15 @@ class ContactPositionEstimatorLogic(ScriptedLoadableModuleLogic):
             p3[1] = p2[1] + (p2[1] - p1[1]) / delta * 3  # distance 3mm
             p3[2] = p2[2] + (p2[2] - p1[2]) / delta * 3  # distance 3mm
 
+            # Used later to check if electrodes inside the brain
+            lh_pial = slicer.mrmlScene.GetFirstNodeByName("lh_pial")
+            rh_pial = slicer.mrmlScene.GetFirstNodeByName("rh_pial")
+            listBrain = list((lh_pial.GetPolyData(), rh_pial.GetPolyData()))
             for p in range(0, (len(points) - 1), 3):
                 a = fidNode.AddControlPoint(float(points[p]), float(points[p + 1]), float(points[p + 2]))
                 fidNode.SetNthFiducialLabel(a, name + str((p / 3) + 1))
                 fidNode.SetNthControlPointDescription(a, elList[i].model.currentText)
-                """
+
                 ### Create a vtk cylinder
                 cylinderSource = vtk.vtkCylinderSource()
                 cylinderSource.SetCenter(0,0,0)
@@ -550,7 +559,19 @@ class ContactPositionEstimatorLogic(ScriptedLoadableModuleLogic):
                 cylindermodel.SetAndObserveTransformNodeID(cylinderTS.GetID())
 
                 slicer.mrmlScene.AddNode(cylindermodel)
-                """
+
+                # Check if electrodes are inside or outside the brain
+                for j in range(0, len(listBrain)):
+                    select = vtk.vtkSelectEnclosedPoints()
+                    select.SetInputData(cylindermodel.GetPolyData())
+                    select.SetSurfaceData(listBrain[j])
+                    select.SetTolerance(.00001)
+                    select.Update()
+                    if select.IsInsideSurface([float(points[p]), float(points[p + 1]), float(points[p + 2])]):
+                        cylindermodelDisplay.SetColor(1, 1, 1)
+                        fidNode.SetNthFiducialLabel(a, name + str((p / 3) + 1)+"#")
+                    del select
+
             if createVTK.checked:
                 ### Create a vtk line
                 lineSource = vtk.vtkLineSource()
