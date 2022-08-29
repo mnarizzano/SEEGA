@@ -470,11 +470,6 @@ class ContactPositionEstimatorLogic(ScriptedLoadableModuleLogic):
         self.pb.setValue(0)
         slicer.app.processEvents()
 
-        # list contains all cylinder vtk used to check if outside from the brain
-        listCylinderModel = list()
-        listCylinderDisplay = list()
-        listCylinderPos = list()
-
         # For each electrode "e":
         for i in range(len(elList)):
             tFlag = "-l" if (elList[i].tailCheckBox.isChecked() == True) else "-t"
