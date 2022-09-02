@@ -117,6 +117,18 @@ class ContactPositionEstimatorWidget(ScriptedLoadableModuleWidget):
         self.deetoFD.setFileMode(qt.QFileDialog.AnyFile)
         self.deetoFD.setToolTip("Pick the input to the algorithm.")
 
+        ### Add a reload button to reload the configuration files
+        self.configurationReload = qt.QPushButton("Reload Configuration")
+        self.configurationReload.toolTip = "Reload the configuration file"
+        self.configurationReload.enabled = True
+        self.configurationReload.connect('clicked(bool)', self.reloadConfiguration)
+        self.configurationReload.setMaximumWidth(100)
+        self.configurationReload.setFixedWidth(400)
+        self.setupFL.addRow("", self.configurationReload)
+
+    def reloadConfiguration(self):
+        self.deetoLE.setText(slicer.modules.ContactPositionEstimatorInstance.deetoExecutablePath)
+
     #######################################################################################
     ### segmentationSetup #
     #######################################################################################
@@ -299,8 +311,11 @@ class ContactPositionEstimatorWidget(ScriptedLoadableModuleWidget):
         """ on ContactPositionEstimator Tool Box Button Logic """
         fileName = qt.QFileDialog.getOpenFileName(self.deetoFD, \
                                                   "Choose surf directory", "~", "")
-        self.deetoLE.setText(fileName)
-        slicer.modules.ContactPositionEstimatorInstance.deetoExecutablePath = fileName
+        if fileName == "":
+            print("null")
+        else:
+            self.deetoLE.setText(fileName)
+
 
     #######################################################################################
     # on Start Segmentation, by reading
