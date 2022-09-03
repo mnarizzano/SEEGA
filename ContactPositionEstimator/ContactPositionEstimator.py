@@ -540,7 +540,7 @@ class ContactPositionEstimatorLogic(ScriptedLoadableModuleLogic):
                 cylinderSource.Update()
                 ### Create a model of the cylinder to add to the scene
                 cylindermodel = slicer.vtkMRMLModelNode()
-                cylindermodel.SetName(name + "_direction")
+                cylindermodel.SetName(name + str((p / 3) + 1))
                 cylindermodel.SetAndObservePolyData(cylinderSource.GetOutput())
 
                 #Create a Transform node for the model to copy the rotation
