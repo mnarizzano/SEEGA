@@ -522,7 +522,10 @@ class ContactPositionEstimatorLogic(ScriptedLoadableModuleLogic):
             # Used later to check if electrodes inside the brain
             lh_pial = slicer.mrmlScene.GetFirstNodeByName("lh_pial")
             rh_pial = slicer.mrmlScene.GetFirstNodeByName("rh_pial")
-            listBrain = list((lh_pial.GetPolyData(), rh_pial.GetPolyData()))
+            if lh_pial is None and rh_pial is None:
+                listBrain = list()
+            else:
+                listBrain = list((lh_pial.GetPolyData(), rh_pial.GetPolyData()))
             for p in range(0, (len(points) - 1), 3):
                 a = fidNode.AddControlPoint(float(points[p]), float(points[p + 1]), float(points[p + 2]))
                 fidNode.SetNthFiducialLabel(a, name + str((p / 3) + 1))
