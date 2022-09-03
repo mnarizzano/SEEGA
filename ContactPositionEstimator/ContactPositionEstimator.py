@@ -572,19 +572,20 @@ class ContactPositionEstimatorLogic(ScriptedLoadableModuleLogic):
                 slicer.mrmlScene.AddNode(cylindermodel)
 
                 # Check if electrodes are inside or outside the brain
-                select = vtk.vtkSelectEnclosedPoints()
-                select.SetInputData(cylindermodel.GetPolyData())
-                select.SetSurfaceData(lh_pial.GetPolyData())
-                select.SetTolerance(.00001)
-                select.Update()
-
-                if not select.IsInsideSurface([float(points[p]), float(points[p + 1]), float(points[p + 2])]) :
-                    select.SetSurfaceData(rh_pial.GetPolyData())
+                if (not lh_pial is None) and (not rh_pial is None):
+                    select = vtk.vtkSelectEnclosedPoints()
+                    select.SetInputData(cylindermodel.GetPolyData())
+                    select.SetSurfaceData(lh_pial.GetPolyData())
+                    select.SetTolerance(.00001)
                     select.Update()
-                    if not select.IsInsideSurface([float(points[p]), float(points[p + 1]), float(points[p + 2])]):
-                        cylindermodelDisplay.SetColor(1, 1, 1)
-                        fidNode.SetNthFiducialLabel(a, name + str((p / 3) + 1)+"#")
-                del select
+
+                    if not select.IsInsideSurface([float(points[p]), float(points[p + 1]), float(points[p + 2])]) :
+                        select.SetSurfaceData(rh_pial.GetPolyData())
+                        select.Update()
+                        if not select.IsInsideSurface([float(points[p]), float(points[p + 1]), float(points[p + 2])]):
+                            cylindermodelDisplay.SetColor(1, 1, 1)
+                            fidNode.SetNthFiducialLabel(a, name + str((p / 3) + 1)+"#")
+                    del select
 
             if createVTK.checked:
                 ### Create a vtk line
