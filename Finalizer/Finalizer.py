@@ -154,6 +154,78 @@ class FinalizerWidget(ScriptedLoadableModuleWidget):
         self.finalizerCBDoc.contentsLineWidth = 1
         self.layout.addWidget(self.finalizerCBDoc)
 
+        ### Collapsible Button Layout - Color VTK
+        self.colorVTK = ctk.ctkCollapsibleButton()
+        self.colorVTK.text = "4. Color VTK"
+        self.colorVTK.contentsLineWidth = 1
+        self.layout.addWidget(self.colorVTK)
+
+        ## Layout inside
+        self.cVTKinside = qt.QFormLayout(self.colorVTK)
+
+        # Tool Box for changing deeto Executable
+        self.jsonColor = qt.QToolButton()
+        self.jsonColor.setText("...")
+        self.jsonColor.toolTip = "Select json to color VTK"
+        self.jsonColor.enabled = True
+        self.jsonColor.connect('clicked(bool)', self.onColorVTK)
+
+        self.jsonColorFile = ""
+
+        # Line Edit button, where the executable path is shown
+        self.colorLE = qt.QLineEdit()
+        self.colorLE.setDisabled(True)
+        self.colorLE.setMaximumWidth(100)
+        self.colorLE.setFixedWidth(300)
+
+        # Buttons Layout
+        self.colorButtons = qt.QHBoxLayout()
+        self.colorButtons.addWidget(self.colorLE)
+        self.colorButtons.addWidget(self.jsonColor)
+
+        # Add button to the layout
+        self.cVTKinside.addRow("JSON color file: ", self.colorButtons)
+
+        ### Add a button to execute the coloring algorithm
+        self.configurationReload = qt.QPushButton("Apply Color")
+        self.configurationReload.toolTip = "Color the vtk following the JSON file"
+        self.configurationReload.enabled = True
+        self.configurationReload.connect('clicked(bool)', self.onApplyColorVTK)
+        self.configurationReload.setMaximumWidth(100)
+        self.configurationReload.setFixedWidth(300)
+        self.cVTKinside.addRow("", self.configurationReload)
+
+
+    def onApplyColorVTK(self):
+        slicer.util.showStatusMessage("START COLORING")
+        print("RUN COLORING ALGORITHM")
+        modelList = list(slicer.mrmlScene.GetNodesByClass('vtkMRMLModelDisplayNode'))
+        for i in range(len(modelList)):
+            if modelList[i].GetName() in self.jsonColorFile:
+                modelList[i].SetColor(self.jsonColorFile[modelList[i].GetName()])
+        print("END RUN COLORING ALGORITHM ")
+        slicer.util.showStatusMessage("END COLORING")
+
+
+    def onColorVTK(self):
+        """ on ContactPositionEstimator Tool Box Button Logic """
+        fileName = qt.QFileDialog.getOpenFileName()
+        f = open(fileName, "r")
+        fread = f.read()
+        if self.isjson(fread):
+            self.colorLE.setText(fileName)
+            self.jsonColorFile = json.loads(fread)
+        else:
+            print("invalid JSON file")
+
+
+    def isjson(self, myjson):
+        try:
+            json.loads(myjson)
+        except ValueError as e:
+            return False
+        return True
+
     #######################################################################################
     # onSplitFiducialClick
     #######################################################################################
