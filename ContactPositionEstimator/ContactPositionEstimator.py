@@ -312,7 +312,7 @@ class ContactPositionEstimatorWidget(ScriptedLoadableModuleWidget):
         fileName = qt.QFileDialog.getOpenFileName(self.deetoFD, \
                                                   "Choose surf directory", "~", "")
         if fileName == "":
-            print("null")
+            pass
         else:
             self.deetoLE.setText(fileName)
 
@@ -522,10 +522,6 @@ class ContactPositionEstimatorLogic(ScriptedLoadableModuleLogic):
             # Used later to check if electrodes inside the brain
             lh_pial = slicer.mrmlScene.GetFirstNodeByName("lh_pial")
             rh_pial = slicer.mrmlScene.GetFirstNodeByName("rh_pial")
-            if lh_pial is None and rh_pial is None:
-                listBrain = list()
-            else:
-                listBrain = list((lh_pial.GetPolyData(), rh_pial.GetPolyData()))
             for p in range(0, (len(points) - 1), 3):
                 a = fidNode.AddControlPoint(float(points[p]), float(points[p + 1]), float(points[p + 2]))
                 fidNode.SetNthFiducialLabel(a, name + str((p / 3) + 1))
@@ -559,11 +555,13 @@ class ContactPositionEstimatorLogic(ScriptedLoadableModuleLogic):
                 cylinderTS.SetAndObserveMatrixTransformToParent(rMatrix)
 
                 cylindermodelDisplay = slicer.vtkMRMLModelDisplayNode()
+                cylindermodelDisplay.SetName(name + str((p / 3) + 1))
                 cylindermodelDisplay.SetSliceIntersectionVisibility(True)  # Hide in slice view
                 cylindermodelDisplay.SetVisibility(True)  # Show in 3D view
                 cylindermodelDisplay.SetColor(1, 0, 0)
                 cylindermodelDisplay.SetLineWidth(2)
                 cylindermodelDisplay.SetOpacity(0.5)
+
 
                 slicer.mrmlScene.AddNode(cylindermodelDisplay)
                 cylindermodel.SetAndObserveDisplayNodeID(cylindermodelDisplay.GetID())
@@ -574,16 +572,19 @@ class ContactPositionEstimatorLogic(ScriptedLoadableModuleLogic):
                 slicer.mrmlScene.AddNode(cylindermodel)
 
                 # Check if electrodes are inside or outside the brain
-                for j in range(0, len(listBrain)):
-                    select = vtk.vtkSelectEnclosedPoints()
-                    select.SetInputData(cylindermodel.GetPolyData())
-                    select.SetSurfaceData(listBrain[j])
-                    select.SetTolerance(.00001)
+                select = vtk.vtkSelectEnclosedPoints()
+                select.SetInputData(cylindermodel.GetPolyData())
+                select.SetSurfaceData(lh_pial.GetPolyData())
+                select.SetTolerance(.00001)
+                select.Update()
+
+                if not select.IsInsideSurface([float(points[p]), float(points[p + 1]), float(points[p + 2])]) :
+                    select.SetSurfaceData(rh_pial.GetPolyData())
                     select.Update()
-                    if select.IsInsideSurface([float(points[p]), float(points[p + 1]), float(points[p + 2])]):
+                    if not select.IsInsideSurface([float(points[p]), float(points[p + 1]), float(points[p + 2])]):
                         cylindermodelDisplay.SetColor(1, 1, 1)
                         fidNode.SetNthFiducialLabel(a, name + str((p / 3) + 1)+"#")
-                    del select
+                del select
 
             if createVTK.checked:
                 ### Create a vtk line
