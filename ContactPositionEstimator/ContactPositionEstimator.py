@@ -126,6 +126,7 @@ class ContactPositionEstimatorWidget(ScriptedLoadableModuleWidget):
         self.configurationReload.setFixedWidth(400)
         self.setupFL.addRow("", self.configurationReload)
 
+
     def reloadConfiguration(self):
         self.deetoLE.setText(slicer.modules.ContactPositionEstimatorInstance.deetoExecutablePath)
 
@@ -532,12 +533,13 @@ class ContactPositionEstimatorLogic(ScriptedLoadableModuleLogic):
                 cylinderSource.SetCenter(0,0,0)
                 cylinderSource.SetHeight(list(models.values())[0][1])
                 cylinderSource.SetRadius(list(models.values())[0][2])
-                cylinderSource.SetResolution(100)
+                cylinderSource.SetResolution(10)
                 cylinderSource.Update()
+
                 ### Create a model of the cylinder to add to the scene
                 cylindermodel = slicer.vtkMRMLModelNode()
                 cylindermodel.SetName(name + str((p / 3) + 1))
-                cylindermodel.SetAndObservePolyData(cylinderSource.GetOutput())
+                cylindermodel.SetAndObserveMesh(cylinderSource.GetOutput())
 
                 #Create a Transform node for the model to copy the rotation
                 cylinderTS = slicer.vtkMRMLTransformNode()
@@ -562,30 +564,54 @@ class ContactPositionEstimatorLogic(ScriptedLoadableModuleLogic):
                 cylindermodelDisplay.SetLineWidth(2)
                 cylindermodelDisplay.SetOpacity(0.5)
 
-
                 slicer.mrmlScene.AddNode(cylindermodelDisplay)
                 cylindermodel.SetAndObserveDisplayNodeID(cylindermodelDisplay.GetID())
-
                 slicer.mrmlScene.AddNode(cylinderTS)
                 cylindermodel.SetAndObserveTransformNodeID(cylinderTS.GetID())
 
                 slicer.mrmlScene.AddNode(cylindermodel)
+                cylindermodel.HardenTransform()
 
                 # Check if electrodes are inside or outside the brain
                 if (not lh_pial is None) and (not rh_pial is None):
-                    select = vtk.vtkSelectEnclosedPoints()
-                    select.SetInputData(cylindermodel.GetPolyData())
-                    select.SetSurfaceData(lh_pial.GetPolyData())
-                    select.SetTolerance(.00001)
-                    select.Update()
+                    for indexMesh in range(0, cylindermodel.GetPolyData().GetNumberOfPoints()):
+                        isInside = 0
+                        pointAt = [0, 0, 0]
+                        selectleft = vtk.vtkSelectEnclosedPoints()
+                        selectleft.SetSurfaceData(lh_pial.GetPolyData())
+                        selectleft.SetTolerance(.00001)
+                        cylindermodel.GetPolyData().GetPoint(indexMesh, pointAt)
+                        ptsleft = vtk.vtkPoints()
+                        ptsleft.InsertNextPoint(pointAt)
+                        pts_pdleft = vtk.vtkPolyData()
+                        pts_pdleft.SetPoints(ptsleft)
+                        selectleft.SetInputData(pts_pdleft)
+                        selectleft.Update()
 
-                    if not select.IsInsideSurface([float(points[p]), float(points[p + 1]), float(points[p + 2])]) :
-                        select.SetSurfaceData(rh_pial.GetPolyData())
-                        select.Update()
-                        if not select.IsInsideSurface([float(points[p]), float(points[p + 1]), float(points[p + 2])]):
-                            cylindermodelDisplay.SetColor(1, 1, 1)
-                            fidNode.SetNthFiducialLabel(a, name + str((p / 3) + 1)+"#")
-                    del select
+                        selectright = vtk.vtkSelectEnclosedPoints()
+                        selectright.SetSurfaceData(rh_pial.GetPolyData())
+                        selectright.SetTolerance(.00001)
+                        cylindermodel.GetPolyData().GetPoint(indexMesh, pointAt)
+                        ptsright = vtk.vtkPoints()
+                        ptsright.InsertNextPoint(pointAt)
+                        pts_pdright = vtk.vtkPolyData()
+                        pts_pdright.SetPoints(ptsright)
+                        selectright.SetInputData(pts_pdright)
+                        selectright.Update()
+
+                        if selectleft.IsInside(0):
+                            isInside += 1
+                            break
+
+                        elif selectright.IsInside(0):
+                            isInside += 1
+                            break
+
+                    if isInside == 0:
+                        cylindermodelDisplay.SetColor(1, 1, 1)
+                        fidNode.SetNthFiducialLabel(a, name + str((p / 3) + 1) + "#")
+
+
 
             if createVTK.checked:
                 ### Create a vtk line
@@ -638,6 +664,107 @@ class ContactPositionEstimatorLogic(ScriptedLoadableModuleLogic):
         # def createModelList(self):
         #     self.electrodeModelist = list()
 
+    def createPoint(self,x,y,z):
+        pointSource = vtk.vtkSphereSource()
+        pointSource.SetCenter(x,y,z)
+        pointSource.SetRadius(0.1)
+
+
+        pointmodel = slicer.vtkMRMLModelNode()
+        pointmodel.SetAndObservePolyData(pointSource.GetOutput())
+
+        pointDisplay = slicer.vtkMRMLModelDisplayNode()
+        pointDisplay.SetSliceIntersectionVisibility(True)  # Hide in slice view
+        pointDisplay.SetVisibility(True)  # Show in 3D view
+        pointDisplay.SetColor(1, 1, 0)
+        pointDisplay.SetLineWidth(1)
+        pointDisplay.SetOpacity(1)
+
+        slicer.mrmlScene.AddNode(pointDisplay)
+        pointmodel.SetAndObserveDisplayNodeID(pointDisplay.GetID())
+
+        slicer.mrmlScene.AddNode(pointmodel)
+
+    def createCylinder(self, x,y,z,height,radius):
+        fid = slicer.util.getNode(slicer.modules.markups.logic().AddNewFiducialNode("cylinder"))
+        ### Create a vtk cylinder
+        cylinderSource = vtk.vtkCylinderSource()
+        cylinderSource.SetCenter(x, y, z)
+        cylinderSource.SetHeight(height)
+        cylinderSource.SetRadius(radius)
+        cylinderSource.SetResolution(100)
+        cylinderSource.Update()
+        ### Create a model of the cylinder to add to the scene
+        cylindermodel = slicer.vtkMRMLModelNode()
+        cylindermodel.SetName("cylinder")
+        cylindermodel.SetAndObservePolyData(cylinderSource.GetOutput())
+
+        cylindermodelDisplay = slicer.vtkMRMLModelDisplayNode()
+        cylindermodelDisplay.SetName("cylinder")
+        cylindermodelDisplay.SetSliceIntersectionVisibility(True)  # Hide in slice view
+        cylindermodelDisplay.SetVisibility(True)  # Show in 3D view
+        cylindermodelDisplay.SetColor(1, 0.5, 0)
+        cylindermodelDisplay.SetLineWidth(2)
+        cylindermodelDisplay.SetOpacity(1)
+
+        slicer.mrmlScene.AddNode(cylindermodelDisplay)
+        cylindermodel.SetAndObserveDisplayNodeID(cylindermodelDisplay.GetID())
+
+
+        slicer.mrmlScene.AddNode(cylindermodel)
+        pointAt = [0,0,0]
+        cylindermodel.GetPolyData().GetPoint(0, pointAt)
+        fid.AddControlPoint(pointAt)
+
+    def createCylinderTransformed(self,x,y,z,height, radius, p1,p2):
+        fid = slicer.util.getNode(slicer.modules.markups.logic().AddNewFiducialNode("cylindertransformed"))
+        cylinderSource = vtk.vtkCylinderSource()
+        cylinderSource.SetCenter(0, 0, 0)
+        cylinderSource.SetHeight(height)
+        cylinderSource.SetRadius(radius)
+        cylinderSource.SetResolution(100)
+        cylinderSource.Update()
+        ### Create a model of the cylinder to add to the scene
+        cylindermodel = slicer.vtkMRMLModelNode()
+        cylindermodel.SetName("cylindertransformed")
+        cylindermodel.SetAndObserveMesh(cylinderSource.GetOutput())
+        # Create a Transform node for the model to copy the rotation
+        cylinderTS = slicer.vtkMRMLTransformNode()
+
+        ##compute the rotation
+        # Given the vector (p1,p3) i move it to the origin
+        vorigin = np.subtract(p1, p2)
+        # compute rotation matrix
+        R = self.rotMat(vorigin)
+        # from 3x3 matrix i transformit in a 4x4 matrix
+        matrix4 = self.mat3To4(R, x,y,z)
+        # from 4x4 matrix, generate vtkmatrix4x4 object
+        rMatrix = self.mat4x4Gen(matrix4)
+        # add the rotation to the model
+        cylinderTS.SetAndObserveMatrixTransformToParent(rMatrix)
+
+        cylindermodelDisplay = slicer.vtkMRMLModelDisplayNode()
+        cylindermodelDisplay.SetName("cylindertreansformed")
+        cylindermodelDisplay.SetSliceIntersectionVisibility(True)  # Hide in slice view
+        cylindermodelDisplay.SetVisibility(True)  # Show in 3D view
+        cylindermodelDisplay.SetColor(1, 1, 0)
+        cylindermodelDisplay.SetLineWidth(2)
+        cylindermodelDisplay.SetOpacity(0.5)
+
+
+
+        slicer.mrmlScene.AddNode(cylindermodelDisplay)
+        cylindermodel.SetAndObserveDisplayNodeID(cylindermodelDisplay.GetID())
+        slicer.mrmlScene.AddNode(cylinderTS)
+        cylindermodel.SetAndObserveTransformNodeID(cylinderTS.GetID())
+
+
+        slicer.mrmlScene.AddNode(cylindermodel)
+        cylindermodel.HardenTransform()
+        pointAt = [0, 0, 0]
+        cylindermodel.GetPolyData().GetPoint(0, pointAt)
+        fid.AddControlPoint(pointAt)
+
     def mat4x4Gen(self, m):
         rMatrix = vtk.vtkMatrix4x4()
         for x in range(4):
@@ -674,6 +801,7 @@ class ContactPositionEstimatorLogic(ScriptedLoadableModuleLogic):
         :param vec2: A 3d "destination" vector
         :return mat: A transform matrix (3x3) which when applied to vec1, aligns it with vec2.
         """
+        #gives error if vec2 is made by 0 vector
         vec1 = [0,1,0]
         a, b = (vec1 / np.linalg.norm(vec1)).reshape(3), (vec2 / np.linalg.norm(vec2)).reshape(3)
         v = np.cross(a, b)
