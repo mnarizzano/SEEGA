@@ -168,13 +168,6 @@ class ContactPositionEstimatorWidget(ScriptedLoadableModuleWidget):
                 self.models += line
             self.models = json.loads(self.models)
 
-
-
-
-
-
-
-
         #### Create the caption table for the configuration
         self.tableCaption = ["Name", "Type/Model", "TP", "cEP"]
         self.tableHsize = [80, 180, 50, 50]
