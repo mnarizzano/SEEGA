@@ -162,7 +162,18 @@ class ContactPositionEstimatorWidget(ScriptedLoadableModuleWidget):
         ### Read from files the list of the modules
         with open(slicer.modules.ContactPositionEstimatorInstance.electrodeTypesPath) as data_file:
             # models is a dictionary with the name of electrode type is the key
-            self.models = json.load(data_file)
+            # removed all the CRLF inside the electrodes.config to solve MAC bug
+            self.models = ""
+            for line in data_file.read().splitlines():
+                self.models += line
+            self.models = json.loads(self.models)
+
+
+
+
+
+
+
 
         #### Create the caption table for the configuration
         self.tableCaption = ["Name", "Type/Model", "TP", "cEP"]
