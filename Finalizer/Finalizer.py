@@ -214,7 +214,11 @@ class FinalizerWidget(ScriptedLoadableModuleWidget):
         fread = f.read()
         if self.isjson(fread):
             self.colorLE.setText(fileName)
-            self.jsonColorFile = json.loads(fread)
+            # removed all the CRLF inside the electrodes.config to solve MAC bug
+            self.jsonColorFile = ""
+            for line in fread.splitlines():
+                self.jsonColorFile += line
+            self.jsonColorFile = json.loads(self.jsonColorFile)
         else:
             print("invalid JSON file")
 
