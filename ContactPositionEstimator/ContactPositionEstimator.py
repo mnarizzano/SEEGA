@@ -47,6 +47,11 @@ class ContactPositionEstimator(ScriptedLoadableModule):
         self.configPath = self.parentPath + "/Config/deeto.config"
         self.electrodeTypesPath = self.parentPath + "/Config/electrodes.config"
 
+        # To generate cylinder vtk with the button, after the fidudicials are already being generated
+        # we need to save the list of markups and the fiducial node in the scene to use it later to generate the VTK
+        self.listFiducial = list()
+        self.fiducialNode = ""
+
         # Locate the deeto executable path and choose the right version respect the platform system
         with open(self.configPath) as data_file:
             tmpConfigData = json.load(data_file)
@@ -282,6 +287,20 @@ class ContactPositionEstimatorWidget(ScriptedLoadableModuleWidget):
         # CREATE vtk models
         self.createVTKModels = qt.QCheckBox("Create Shaft Model?")
 
+        # CREATE vtk cylinder models with checkbox
+        self.createElectrodeVTKModels = qt.QCheckBox("Create Electrodes Model?")
+
+        # CREATE vtk cylinder models with buttons after startsegmentation
+        self.createElectrodeVTKModelsButton = qt.QPushButton("Start Segmentation")
+        self.startSegmentationPB.toolTip = "Run the algorithm."
+        self.startSegmentationPB.enabled = True
+
+        # START Segmentation ONLY VTK button without creating any fiducial point
+        self.segmentationOnlyVTK = qt.QPushButton("Generate VTK")
+        self.segmentationOnlyVTK.toolTip = "Better if executed after Start Segmentation"
+        self.segmentationOnlyVTK.enabled = True
+
+
         # SPLIT Fiducial Combobox
 #        self.fiducialSplitBox = slicer.qMRMLNodeComboBox()
 #        self.fiducialSplitBox.nodeTypes = (("vtkMRMLMarkupsFiducialNode"), "")
@@ -300,14 +319,31 @@ class ContactPositionEstimatorWidget(ScriptedLoadableModuleWidget):
         horzGroupLayout = qt.QHBoxLayout()
         horzGroupLayout.addWidget(self.startSegmentationPB)
         horzGroupLayout.addWidget(self.createVTKModels)
+        horzGroupLayout.addWidget(self.createElectrodeVTKModels)
 
         self.segmentationFL.addRow("", horzGroupLayout)
+        self.segmentationFL.addRow("", self.segmentationOnlyVTK)
 #        self.segmentationFL.addRow("", self.fiducialSplitBox)
 #        self.segmentationFL.addRow("", self.splitFiducialPB)
 
         # connections
 #        self.splitFiducialPB.connect('clicked(bool)', self.onsplitFiducialClick)
         self.startSegmentationPB.connect('clicked(bool)', self.onstartSegmentationPB)
+        self.segmentationOnlyVTK.connect('clicked(bool)', self.onstartSegmentationOnlyVTK)
+
+    #######################################################################################
+    # Generate VTK BUTTON
+    #######################################################################################
+    def onstartSegmentationOnlyVTK(self):
+        slicer.util.showStatusMessage("START GENERATING VTK")
+        print("RUN GENERATING ONLY VTK ALGORITHM ")
+        ContactPositionEstimatorLogic().runSegmentation(self.electrodeList, self.ctVolumeCB.currentNode(), \
+                                                        slicer.modules.ContactPositionEstimatorInstance.parentPath, \
+                                                        slicer.modules.ContactPositionEstimatorInstance.deetoExecutablePath, \
+                                                        self.models, self.createVTKModels,
+                                                        self.createElectrodeVTKModels, 1)
+        print("END RUN GENERATING ONLY VTK ALGORITHM ")
+        slicer.util.showStatusMessage("END GENERATING VTK")
 
     #######################################################################################
     # on ContactPositionEstimator BUTTON
@@ -331,7 +367,7 @@ class ContactPositionEstimatorWidget(ScriptedLoadableModuleWidget):
         ContactPositionEstimatorLogic().runSegmentation(self.electrodeList, self.ctVolumeCB.currentNode(), \
                                                         slicer.modules.ContactPositionEstimatorInstance.parentPath, \
                                                         slicer.modules.ContactPositionEstimatorInstance.deetoExecutablePath, \
-                                                        self.models, self.createVTKModels)
+                                                        self.models, self.createVTKModels, self.createElectrodeVTKModels, 0)
         print ("END RUN SEGMENTATION ALGORITHM ")
         slicer.util.showStatusMessage("END SEGMENTATION")
 
@@ -439,7 +475,10 @@ class ContactPositionEstimatorLogic(ScriptedLoadableModuleLogic):
     #######################################################################################
     # runSegmentation
     #######################################################################################
-    def runSegmentation(self, elList, volume, parentPath, deetoExe, models, createVTK):
+    # we have two button: A. generate fiducial list with/without VTK and B. generate only VTK
+    # execMode = 0 is for A while execMode = 1 is for B
+    #######################################################################################
+    def runSegmentation(self, elList, volume, parentPath, deetoExe, models, createVTK, electrodeVTK, execMode):
         ### CHECK that both the fiducials and ct volume have been selected
         if (len(elList) == 0):
             # notify error
@@ -478,7 +517,8 @@ class ContactPositionEstimatorLogic(ScriptedLoadableModuleLogic):
         mlogic.SetColor(0.39, 0.78, 0.78)  # AZZURRO
         mlogic.SetSelectedColor(0.39, 1.0, 0.39)  # VERDONE
 
-        fidNode = slicer.util.getNode(slicer.modules.markups.logic().AddNewFiducialNode("recon"))
+        if execMode == 0:
+            fidNode = slicer.util.getNode(slicer.modules.markups.logic().AddNewFiducialNode("recon"))
 
         # Save the volume as has been modified
         self.tmpVolumeFile = parentPath + "/Tmp/tmp.nii.gz"
@@ -489,6 +529,11 @@ class ContactPositionEstimatorLogic(ScriptedLoadableModuleLogic):
         self.pb.show()
         self.pb.setValue(0)
         slicer.app.processEvents()
+
+        # Check if i need to reset the list of fiducial with new values or not
+        listF = slicer.modules.ContactPositionEstimatorInstance.listFiducial
+        if execMode == 0:
+            listF = list()
 
         # For each electrode "e":
         for i in range(len(elList)):
@@ -527,94 +572,25 @@ class ContactPositionEstimatorLogic(ScriptedLoadableModuleLogic):
             # Used later to check if electrodes inside the brain
             lh_pial = slicer.mrmlScene.GetFirstNodeByName("lh_pial")
             rh_pial = slicer.mrmlScene.GetFirstNodeByName("rh_pial")
-            for p in range(0, (len(points) - 1), 3):
-                a = fidNode.AddControlPoint(float(points[p]), float(points[p + 1]), float(points[p + 2]))
-                fidNode.SetNthFiducialLabel(a, name + str((p / 3) + 1))
-                fidNode.SetNthControlPointDescription(a, elList[i].model.currentText)
+            # listF generate a 2-Dimension list to save each fiducial point in the scene
+            # to generate only VTK but referring to the fiducials in the mrmlScene
+            if execMode == 0:
+                listF.append([])
 
-                ### Create a vtk cylinder
-                cylinderSource = vtk.vtkCylinderSource()
-                cylinderSource.SetCenter(0,0,0)
-                cylinderSource.SetHeight(list(models.values())[0][1])
-                cylinderSource.SetRadius(list(models.values())[0][2])
-                cylinderSource.SetResolution(10)
-                cylinderSource.Update()
+            for idx,p in enumerate(range(0, (len(points) - 1), 3)):
+                if execMode == 0:
+                    a = fidNode.AddControlPoint(float(points[p]), float(points[p + 1]), float(points[p + 2]))
+                    fidNode.SetNthFiducialLabel(a, name + str((p / 3) + 1))
+                    fidNode.SetNthControlPointDescription(a, elList[i].model.currentText)
+                    listF[len(listF)-1].append(a)
+                    if electrodeVTK.checked:
+                        self.createElectrodeVTK(models,p1, p3, p, name, points, lh_pial, rh_pial, fidNode, a)
 
-                ### Create a model of the cylinder to add to the scene
-                cylindermodel = slicer.vtkMRMLModelNode()
-                cylindermodel.SetName(name + str((p / 3) + 1))
-                cylindermodel.SetAndObserveMesh(cylinderSource.GetOutput())
-
-                #Create a Transform node for the model to copy the rotation
-                cylinderTS = slicer.vtkMRMLTransformNode()
-
-                ##compute the rotation
-                #Given the vector (p1,p3) i move it to the origin
-                vorigin = np.subtract(p1,p3)
-                #compute rotation matrix
-                R = self.rotMat(vorigin)
-                #from 3x3 matrix i transformit in a 4x4 matrix
-                matrix4 = self.mat3To4(R, float(points[p]), float(points[p + 1]), float(points[p + 2]))
-                #from 4x4 matrix, generate vtkmatrix4x4 object
-                rMatrix = self.mat4x4Gen(matrix4)
-                #add the rotation to the model
-                cylinderTS.SetAndObserveMatrixTransformToParent(rMatrix)
-
-                cylindermodelDisplay = slicer.vtkMRMLModelDisplayNode()
-                cylindermodelDisplay.SetName(name + str((p / 3) + 1))
-                cylindermodelDisplay.SetSliceIntersectionVisibility(True)  # Hide in slice view
-                cylindermodelDisplay.SetVisibility(True)  # Show in 3D view
-                cylindermodelDisplay.SetColor(1, 0, 0)
-                cylindermodelDisplay.SetLineWidth(2)
-                cylindermodelDisplay.SetOpacity(0.5)
-
-                slicer.mrmlScene.AddNode(cylindermodelDisplay)
-                cylindermodel.SetAndObserveDisplayNodeID(cylindermodelDisplay.GetID())
-                slicer.mrmlScene.AddNode(cylinderTS)
-                cylindermodel.SetAndObserveTransformNodeID(cylinderTS.GetID())
-
-                slicer.mrmlScene.AddNode(cylindermodel)
-                cylindermodel.HardenTransform()
-
-                # Check if electrodes are inside or outside the brain
-                if (not lh_pial is None) and (not rh_pial is None):
-                    for indexMesh in range(0, cylindermodel.GetPolyData().GetNumberOfPoints()):
-                        isInside = 0
-                        pointAt = [0, 0, 0]
-                        selectleft = vtk.vtkSelectEnclosedPoints()
-                        selectleft.SetSurfaceData(lh_pial.GetPolyData())
-                        selectleft.SetTolerance(.00001)
-                        cylindermodel.GetPolyData().GetPoint(indexMesh, pointAt)
-                        ptsleft = vtk.vtkPoints()
-                        ptsleft.InsertNextPoint(pointAt)
-                        pts_pdleft = vtk.vtkPolyData()
-                        pts_pdleft.SetPoints(ptsleft)
-                        selectleft.SetInputData(pts_pdleft)
-                        selectleft.Update()
-
-                        selectright = vtk.vtkSelectEnclosedPoints()
-                        selectright.SetSurfaceData(rh_pial.GetPolyData())
-                        selectright.SetTolerance(.00001)
-                        cylindermodel.GetPolyData().GetPoint(indexMesh, pointAt)
-                        ptsright = vtk.vtkPoints()
-                        ptsright.InsertNextPoint(pointAt)
-                        pts_pdright = vtk.vtkPolyData()
-                        pts_pdright.SetPoints(ptsright)
-                        selectright.SetInputData(pts_pdright)
-                        selectright.Update()
-
-                        if selectleft.IsInside(0):
-                            isInside += 1
-                            break
-
-                        elif selectright.IsInside(0):
-                            isInside += 1
-                            break
-
-                    if isInside == 0:
-                        cylindermodelDisplay.SetColor(1, 1, 1)
-                        fidNode.SetNthFiducialLabel(a, name + str((p / 3) + 1) + "#")
-
+                elif execMode == 1:
+                    if len(listF) == 0:
+                        self.createElectrodeVTK(models, p1, p3, p, name, points, lh_pial, rh_pial, None, None)
+                    else:
+                        self.createElectrodeVTK(models, p1, p3, p, name, points, lh_pial, rh_pial, slicer.modules.ContactPositionEstimatorInstance.fiducialNode, listF[i][idx])
 
 
             if createVTK.checked:
@@ -638,11 +614,16 @@ class ContactPositionEstimatorLogic(ScriptedLoadableModuleLogic):
                 slicer.mrmlScene.AddNode(model)
 
             # Lock all markup
-            slicer.modules.markups.logic().SetAllMarkupsLocked(fidNode, True)
+            if execMode == 0:
+                slicer.modules.markups.logic().SetAllMarkupsLocked(fidNode, True)
 
             # update progress bar
             self.pb.setValue(i + 1)
             slicer.app.processEvents()
+
+        if execMode == 0:
+            slicer.modules.ContactPositionEstimatorInstance.listFiducial = listF
+            slicer.modules.ContactPositionEstimatorInstance.fiducialNode = fidNode
 
         self.pb.hide()
 
@@ -669,6 +650,90 @@ class ContactPositionEstimatorLogic(ScriptedLoadableModuleLogic):
         #     self.electrodeModelist = list()
 
 
+    # algorithm to generate cylinder VTK to represent the electrodes
+    def createElectrodeVTK(self, models, p1, p3, p, name, points, lh_pial, rh_pial, fidNode, a):
+        ### Create a vtk cylinder
+        cylinderSource = vtk.vtkCylinderSource()
+        cylinderSource.SetCenter(0, 0, 0)
+        cylinderSource.SetHeight(list(models.values())[0][1])
+        cylinderSource.SetRadius(list(models.values())[0][2])
+        cylinderSource.SetResolution(10)
+        cylinderSource.Update()
+
+        ### Create a model of the cylinder to add to the scene
+        cylindermodel = slicer.vtkMRMLModelNode()
+        cylindermodel.SetName(name + str((p / 3) + 1))
+        cylindermodel.SetAndObserveMesh(cylinderSource.GetOutput())
+
+        # Create a Transform node for the model to copy the rotation
+        cylinderTS = slicer.vtkMRMLTransformNode()
+
+        ##compute the rotation
+        # Given the vector (p1,p3) i move it to the origin
+        vorigin = np.subtract(p1, p3)
+        R = self.rotMat(vorigin)
+        matrix4 = self.mat3To4(R, float(points[p]), float(points[p + 1]), float(points[p + 2]))
+        rMatrix = self.mat4x4Gen(matrix4)
+        # add the rotation to the model
+        cylinderTS.SetAndObserveMatrixTransformToParent(rMatrix)
+
+        cylindermodelDisplay = slicer.vtkMRMLModelDisplayNode()
+        cylindermodelDisplay.SetName(name + str((p / 3) + 1))
+        cylindermodelDisplay.SetSliceIntersectionVisibility(True)  # Hide in slice view
+        cylindermodelDisplay.SetVisibility(True)  # Show in 3D view
+        cylindermodelDisplay.SetColor(1, 0, 0)
+        cylindermodelDisplay.SetLineWidth(2)
+        cylindermodelDisplay.SetOpacity(0.5)
+
+        slicer.mrmlScene.AddNode(cylindermodelDisplay)
+        cylindermodel.SetAndObserveDisplayNodeID(cylindermodelDisplay.GetID())
+        slicer.mrmlScene.AddNode(cylinderTS)
+        cylindermodel.SetAndObserveTransformNodeID(cylinderTS.GetID())
+
+        slicer.mrmlScene.AddNode(cylindermodel)
+        cylindermodel.HardenTransform()
+
+        # Check if electrodes are inside or outside the brain
+        if (not lh_pial is None) and (not rh_pial is None):
+            for indexMesh in range(0, cylindermodel.GetPolyData().GetNumberOfPoints()):
+                isInside = 0
+                pointAt = [0, 0, 0]
+                selectleft = vtk.vtkSelectEnclosedPoints()
+                selectleft.SetSurfaceData(lh_pial.GetPolyData())
+                selectleft.SetTolerance(.00001)
+                cylindermodel.GetPolyData().GetPoint(indexMesh, pointAt)
+                ptsleft = vtk.vtkPoints()
+                ptsleft.InsertNextPoint(pointAt)
+                pts_pdleft = vtk.vtkPolyData()
+                pts_pdleft.SetPoints(ptsleft)
+                selectleft.SetInputData(pts_pdleft)
+                selectleft.Update()
+
+                selectright = vtk.vtkSelectEnclosedPoints()
+                selectright.SetSurfaceData(rh_pial.GetPolyData())
+                selectright.SetTolerance(.00001)
+                cylindermodel.GetPolyData().GetPoint(indexMesh, pointAt)
+                ptsright = vtk.vtkPoints()
+                ptsright.InsertNextPoint(pointAt)
+                pts_pdright = vtk.vtkPolyData()
+                pts_pdright.SetPoints(ptsright)
+                selectright.SetInputData(pts_pdright)
+                selectright.Update()
+
+                if selectleft.IsInside(0):
+                    isInside += 1
+                    break
+
+                elif selectright.IsInside(0):
+                    isInside += 1
+                    break
+
+            if isInside == 0:
+                cylindermodelDisplay.SetColor(1, 1, 1)
+                if a != None:
+                    fidNode.SetNthFiducialLabel(a, name + str((p / 3) + 1) + "#")
+
+    # from 4x4 matrix, generate vtkmatrix4x4 object
     def mat4x4Gen(self, m):
         rMatrix = vtk.vtkMatrix4x4()
         for x in range(4):
@@ -676,6 +741,7 @@ class ContactPositionEstimatorLogic(ScriptedLoadableModuleLogic):
                 rMatrix.SetElement(x, y, m[x][y])
         return rMatrix
 
+    # from 3x3 matrix i transform it in a 4x4 matrix
     def mat3To4(self, m,x,y,z):
         b = np.array([[0, 0, 0]])
         c = np.concatenate((m, b), axis=0)
@@ -699,6 +765,7 @@ class ContactPositionEstimatorLogic(ScriptedLoadableModuleLogic):
 
         return eul3, eul2, eul1
 
+    # compute rotation matrix
     def rotMat(self, vec2):
         """ Find the rotation matrix that aligns vec1 to vec2
         :param vec1: A 3d "source" vector
