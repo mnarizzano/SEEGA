@@ -186,6 +186,7 @@ class FinalizerWidget(ScriptedLoadableModuleWidget):
         # Add button to the layout
         self.cVTKinside.addRow("JSON color file: ", self.colorButtons)
 
+
         ### Add a button to execute the coloring algorithm
         self.configurationReload = qt.QPushButton("Apply Color")
         self.configurationReload.toolTip = "Color the vtk following the JSON file"
@@ -200,11 +201,21 @@ class FinalizerWidget(ScriptedLoadableModuleWidget):
         slicer.util.showStatusMessage("START COLORING")
         print("RUN COLORING ALGORITHM")
         modelList = list(slicer.mrmlScene.GetNodesByClass('vtkMRMLModelDisplayNode'))
+        countColored = 0
         for i in range(len(modelList)):
             if modelList[i].GetName() in self.jsonColorFile:
                 modelList[i].SetColor(self.jsonColorFile[modelList[i].GetName()])
+                countColored += 1
         print("END RUN COLORING ALGORITHM ")
         slicer.util.showStatusMessage("END COLORING")
+
+        if countColored == 0:
+            print("NO VTK AVAILABLE TO COLOR")
+            print("Please, generate the VTK from the Contact Position Estimator module")
+            msgBox = qt.QMessageBox()
+            msgBox.setWindowTitle("Error: No VTK found")
+            msgBox.setText("Generate the VTK from Contact Position Estimator Module    \nor check the JSON color file")
+            msgBox.exec()
 
 
     def onColorVTK(self):
