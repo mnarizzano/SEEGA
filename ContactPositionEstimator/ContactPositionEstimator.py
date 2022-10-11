@@ -519,6 +519,8 @@ class ContactPositionEstimatorLogic(ScriptedLoadableModuleLogic):
 
         if execMode == 0:
             fidNode = slicer.util.getNode(slicer.modules.markups.logic().AddNewFiducialNode("recon"))
+        else:
+            fidNode = slicer.modules.ContactPositionEstimatorInstance.fiducialNode
 
         # Save the volume as has been modified
         self.tmpVolumeFile = parentPath + "/Tmp/tmp.nii.gz"
@@ -577,20 +579,59 @@ class ContactPositionEstimatorLogic(ScriptedLoadableModuleLogic):
             if execMode == 0:
                 listF.append([])
 
+            thresholdGlobal = 0 # it's the most ouside electrode but inside the pial surface
+            listOutVTK = list() # Generate VTK button will have a way to interact with the fiducials previously generated with Start Segmentation button
+            mode = 0 # to cover multiple scenarios when we check if an electrode is outside the pial surface but inside the skull
             for idx,p in enumerate(range(0, (len(points) - 1), 3)):
+
+                # pressed Start Segmentation button
                 if execMode == 0:
                     a = fidNode.AddControlPoint(float(points[p]), float(points[p + 1]), float(points[p + 2]))
                     fidNode.SetNthFiducialLabel(a, name + str((p / 3) + 1))
                     fidNode.SetNthControlPointDescription(a, elList[i].model.currentText)
-                    listF[len(listF)-1].append(a)
-                    if electrodeVTK.checked:
-                        self.createElectrodeVTK(models,p1, p3, p, name, points, lh_pial, rh_pial, fidNode, a)
+                    listF[len(listF) - 1].append(a)
 
+                    # if checkbox generate vtk is checked
+                    if electrodeVTK.checked:
+                        vtkmodel, vtkdisplay = self.createElectrodeVTK(models,p1, p3, p, name, points)
+
+                        #if pials are present execute check outside or inside VTK
+                        if (not lh_pial is None) and (not rh_pial is None):
+                            mode = 3
+                            # check threshold of internal electrodes and append electrodes outside pial surface
+                            thresholdLocal = self.checkIfOutsideSkull(lh_pial, rh_pial, vtkmodel, vtkdisplay, p, a, fidNode, name, thresholdGlobal)
+                            if thresholdLocal != 0:
+                                thresholdGlobal = thresholdLocal
+                            elif thresholdLocal == 0:
+                                listOutVTK.append((vtkdisplay, fidNode, p, a, name))
+
+                # pressed Generate VTK button
                 elif execMode == 1:
-                    if len(listF) == 0:
-                        self.createElectrodeVTK(models, p1, p3, p, name, points, lh_pial, rh_pial, None, None)
-                    else:
-                        self.createElectrodeVTK(models, p1, p3, p, name, points, lh_pial, rh_pial, slicer.modules.ContactPositionEstimatorInstance.fiducialNode, listF[i][idx])
+                    vtkmodel, vtkdisplay = self.createElectrodeVTK(models, p1, p3, p, name, points)
+
+                    # if pials are present execute check outside or inside VTK
+                    if (not lh_pial is None) and (not rh_pial is None):
+
+                        # case no fiducials in the scene
+                        if len(listF) == 0:
+                            mode = 7
+                            thresholdLocal = self.checkIfOutsideSkull(lh_pial, rh_pial, vtkmodel, vtkdisplay, p, None, None, name, thresholdGlobal)
+                            if thresholdLocal != 0:
+                                thresholdGlobal = thresholdLocal
+                            elif thresholdLocal == 0:
+                                listOutVTK.append((vtkdisplay, fidNode, p, None, name))
+
+                        # case fiducials previously generated from Start Segmentation button
+                        else:
+                            mode = 5
+                            thresholdLocal = self.checkIfOutsideSkull(lh_pial, rh_pial, vtkmodel, vtkdisplay, p, listF[i][idx], slicer.modules.ContactPositionEstimatorInstance.fiducialNode, name, thresholdGlobal)
+                            if thresholdLocal != 0:
+                                thresholdGlobal = thresholdLocal
+                            elif thresholdLocal == 0:
+                                listOutVTK.append((vtkdisplay, fidNode, p, listF[i][idx], name))
+
+            # check when electrodes outside pial surface are inside or outside the brain
+            self.isInsideSkullOutsidePial(listOutVTK, thresholdGlobal, mode)
 
 
             if createVTK.checked:
@@ -651,7 +692,7 @@ class ContactPositionEstimatorLogic(ScriptedLoadableModuleLogic):
 
 
     # algorithm to generate cylinder VTK to represent the electrodes
-    def createElectrodeVTK(self, models, p1, p3, p, name, points, lh_pial, rh_pial, fidNode, a):
+    def createElectrodeVTK(self, models, p1, p3, p, name, points):
         ### Create a vtk cylinder
         cylinderSource = vtk.vtkCylinderSource()
         cylinderSource.SetCenter(0, 0, 0)
@@ -693,45 +734,80 @@ class ContactPositionEstimatorLogic(ScriptedLoadableModuleLogic):
         slicer.mrmlScene.AddNode(cylindermodel)
         cylindermodel.HardenTransform()
 
-        # Check if electrodes are inside or outside the brain
-        if (not lh_pial is None) and (not rh_pial is None):
-            for indexMesh in range(0, cylindermodel.GetPolyData().GetNumberOfPoints()):
-                isInside = 0
-                pointAt = [0, 0, 0]
-                selectleft = vtk.vtkSelectEnclosedPoints()
-                selectleft.SetSurfaceData(lh_pial.GetPolyData())
-                selectleft.SetTolerance(.00001)
-                cylindermodel.GetPolyData().GetPoint(indexMesh, pointAt)
-                ptsleft = vtk.vtkPoints()
-                ptsleft.InsertNextPoint(pointAt)
-                pts_pdleft = vtk.vtkPolyData()
-                pts_pdleft.SetPoints(ptsleft)
-                selectleft.SetInputData(pts_pdleft)
-                selectleft.Update()
+        return cylindermodel, cylindermodelDisplay
 
-                selectright = vtk.vtkSelectEnclosedPoints()
-                selectright.SetSurfaceData(rh_pial.GetPolyData())
-                selectright.SetTolerance(.00001)
-                cylindermodel.GetPolyData().GetPoint(indexMesh, pointAt)
-                ptsright = vtk.vtkPoints()
-                ptsright.InsertNextPoint(pointAt)
-                pts_pdright = vtk.vtkPolyData()
-                pts_pdright.SetPoints(ptsright)
-                selectright.SetInputData(pts_pdright)
-                selectright.Update()
+    # Check if electrodes are inside or outside the brain
+    def checkIfOutsideSkull(self, lh_pial, rh_pial, cylindermodel, cylindermodelDisplay, p, a, fidNode, name, threshold):
+        for indexMesh in range(0, cylindermodel.GetPolyData().GetNumberOfPoints()):
+            isInside = 0
+            pointAt = [0, 0, 0]
+            selectleft = vtk.vtkSelectEnclosedPoints()
+            selectleft.SetSurfaceData(lh_pial.GetPolyData())
+            selectleft.SetTolerance(.00001)
+            cylindermodel.GetPolyData().GetPoint(indexMesh, pointAt)
+            ptsleft = vtk.vtkPoints()
+            ptsleft.InsertNextPoint(pointAt)
+            pts_pdleft = vtk.vtkPolyData()
+            pts_pdleft.SetPoints(ptsleft)
+            selectleft.SetInputData(pts_pdleft)
+            selectleft.Update()
 
-                if selectleft.IsInside(0):
-                    isInside += 1
+            selectright = vtk.vtkSelectEnclosedPoints()
+            selectright.SetSurfaceData(rh_pial.GetPolyData())
+            selectright.SetTolerance(.00001)
+            cylindermodel.GetPolyData().GetPoint(indexMesh, pointAt)
+            ptsright = vtk.vtkPoints()
+            ptsright.InsertNextPoint(pointAt)
+            pts_pdright = vtk.vtkPolyData()
+            pts_pdright.SetPoints(ptsright)
+            selectright.SetInputData(pts_pdright)
+            selectright.Update()
+
+            if selectleft.IsInside(0):
+                isInside += 1
+                break
+
+            elif selectright.IsInside(0):
+                isInside += 1
+                break
+
+        if isInside == 0:
+            cylindermodelDisplay.SetColor(1, 1, 1)
+            # var a is the single fiducial. if it's None we are executing Generate VTK without any fiducials in the scene
+            if a != None:
+                # if outside skull
+                fidNode.SetNthFiducialLabel(a, name + str((p / 3) + 1) + "#")
+            return 0
+        else:
+            return (p / 3) + 1
+
+    def isInsideSkullOutsidePial(self, listOutVTK, thresholdGlobal, mode):
+        """
+        7 modes:
+        1. create only fiducial
+        2. create fiducial + VTK
+        3. create fiducial + VTK + check if outside skull
+        4. fiducials already in scene + create VTK
+        5. fiducials already in scene + create VTK + check if outside skull
+        6. create only VTK
+        7. create VTK + check if outside skull
+        This function check electrodes inside the skull,
+        but outside the pial surface. Between pial and skull.
+        So we are intersted only in mode: 3, 5, 7.
+        """
+        if mode == 3 or mode == 5:
+            for j in listOutVTK:
+                if (j[2] / 3 + 1) < thresholdGlobal:
+                    j[1].SetNthFiducialLabel(j[3], j[4] + str(j[2] / 3 + 1) + "$")
+                    j[0].SetColor(1, 1, 0)
+                else:
                     break
-
-                elif selectright.IsInside(0):
-                    isInside += 1
+        elif mode == 7:
+            for j in listOutVTK:
+                if (j[2] / 3 + 1) < thresholdGlobal:
+                    j[0].SetColor(1, 1, 0)
+                else:
                     break
-
-            if isInside == 0:
-                cylindermodelDisplay.SetColor(1, 1, 1)
-                if a != None:
-                    fidNode.SetNthFiducialLabel(a, name + str((p / 3) + 1) + "#")
 
     # from 4x4 matrix, generate vtkmatrix4x4 object
     def mat4x4Gen(self, m):
