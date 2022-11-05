@@ -777,6 +777,7 @@ class ContactPositionEstimatorLogic(ScriptedLoadableModuleLogic):
             if a != None:
                 # if outside skull
                 fidNode.SetNthFiducialLabel(a, name + str((p / 3) + 1) + "#")
+                cylindermodelDisplay.SetName(name + str((p / 3) + 1) + "#")
             return 0
         else:
             return (p / 3) + 1
