@@ -332,6 +332,9 @@ class ContactPositionEstimatorWidget(ScriptedLoadableModuleWidget):
     def onstartSegmentationPB(self):
         slicer.util.showStatusMessage("START SEGMENTATION")
         print ("RUN SEGMENTATION ALGORITHM ")
+        
+        
+        # define exception when one electrode is misplaced
         try:
             ContactPositionEstimatorLogic().runSegmentation(self.electrodeList, self.ctVolumeCB.currentNode(), \
                                                             slicer.modules.ContactPositionEstimatorInstance.parentPath, \
@@ -510,8 +513,6 @@ class ContactPositionEstimatorLogic(ScriptedLoadableModuleLogic):
                        str(-1 * elList[i].target[0]), str(-1 * elList[i].target[1]), \
                        str(elList[i].target[2]), '-m'] + \
                       list(map(str, models[elList[i].model.currentText][:-1]))
-
-            # abi ricontrolla se c'era altro prima qui
 
             # RUN the command line cmdLine.
             # [NOTE] : I have used Popen since subprocess.check_output wont work at the moment
