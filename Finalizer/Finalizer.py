@@ -567,3 +567,7 @@ class FinalizerLogic(ScriptedLoadableModuleLogic):
                 cwTableNode.SetCellText(row, 1, str(srcElec.label))
                 cwTableNode.SetCellText(row, 2, str('-' + refElec.label))
                 row += 1
+
+
+
+
