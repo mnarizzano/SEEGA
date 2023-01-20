@@ -249,6 +249,212 @@ class FinalizerWidget(ScriptedLoadableModuleWidget):
         except:
             print("invalid Orig file")
 
+        ### Collapsible Button Layout - Color VTK
+        self.colorVTK = ctk.ctkCollapsibleButton()
+        self.colorVTK.text = "4. Color VTK"
+        self.colorVTK.contentsLineWidth = 1
+        self.layout.addWidget(self.colorVTK)
+
+        ## Layout inside
+        self.cVTKinside = qt.QFormLayout(self.colorVTK)
+
+        # Tool Box for changing deeto Executable
+        self.jsonColor = qt.QToolButton()
+        self.jsonColor.setText("...")
+        self.jsonColor.toolTip = "Select json to color VTK"
+        self.jsonColor.enabled = True
+        self.jsonColor.connect('clicked(bool)', self.onColorVTK)
+
+        self.jsonColorFile = ""
+
+        # Line Edit button, where the executable path is shown
+        self.colorLE = qt.QLineEdit()
+        self.colorLE.setDisabled(True)
+        self.colorLE.setMaximumWidth(100)
+        self.colorLE.setFixedWidth(300)
+
+        # Buttons Layout
+        self.colorButtons = qt.QHBoxLayout()
+        self.colorButtons.addWidget(self.colorLE)
+        self.colorButtons.addWidget(self.jsonColor)
+
+        # Add button to the layout
+        self.cVTKinside.addRow("JSON color file: ", self.colorButtons)
+
+
+        ### Add a button to execute the coloring algorithm
+        self.configurationReload = qt.QPushButton("Apply Color")
+        self.configurationReload.toolTip = "Color the vtk following the JSON file"
+        self.configurationReload.enabled = True
+        self.configurationReload.connect('clicked(bool)', self.onApplyColorVTK)
+        self.configurationReload.setMaximumWidth(100)
+        self.configurationReload.setFixedWidth(300)
+        self.cVTKinside.addRow("", self.configurationReload)
+
+        #### Save fiducials custom JSON format
+        # layout collapsible
+        self.customSaveSection = ctk.ctkCollapsibleButton()
+        self.customSaveSection.text = "5. Save Fiducial in JSON"
+        self.customSaveSection.contentsLineWidth = 1
+        self.layout.addWidget(self.customSaveSection)
+
+        # Layout inside
+        self.cssIn = qt.QFormLayout(self.customSaveSection)
+
+        # section to select fiducial from list
+        self.fidSelected = slicer.qMRMLNodeComboBox()
+        self.fidSelected.nodeTypes = (("vtkMRMLMarkupsFiducialNode"), "")
+        self.fidSelected.selectNodeUponCreation = False
+        self.fidSelected.addEnabled = False
+        self.fidSelected.removeEnabled = False
+        self.fidSelected.noneEnabled = True
+        self.fidSelected.setMRMLScene(slicer.mrmlScene)
+        self.fidSelected.setToolTip("Select a fiducial list")
+        # add list to the layout
+        self.cssIn.addRow("Fiducial List", self.fidSelected)
+
+        ### button to save the fiducial into custom JSON format
+        self.btnSaveJSON = qt.QPushButton("Save as JSON")
+        self.btnSaveJSON.toolTip = "Save selected fiducial into JSON custom format"
+        self.btnSaveJSON.enabled = True
+        self.btnSaveJSON.connect('clicked(bool)', self.onbtnSaveJSON)
+        self.btnSaveJSON.setMaximumWidth(100)
+        self.btnSaveJSON.setFixedWidth(300)
+        self.cssIn.addRow("", self.btnSaveJSON)
+
+
+
+    def onbtnSaveJSON(self):
+        if self.fidSelected.currentNode() is None:
+            print("Please, select a fiducial if there is any")
+            return
+        fid = self.fidSelected.currentNode()
+        dis = fid.GetDisplayNode()
+        customRawJSON = {
+            "id": fid.GetID(),
+            "name": fid.GetName(),
+            "className": fid.GetClassName(),
+            "numControlPoints": fid.GetNumberOfControlPoints(),
+            "controlPoints": self.GetListOfControlPoints(fid),
+            "display": {
+                "id": dis.GetID(),
+                "name": dis.GetName(),
+                "visibility": dis.GetVisibility(),
+                "opacity": dis.GetOpacity(),
+                "color": dis.GetColor(),
+                "selectedColor": dis.GetSelectedColor(),
+                "activeColor": dis.GetActiveColor(),
+                "propertiesLabelVisibility": dis.GetPropertiesLabelVisibility(),
+                "pointLabelsVisibility": dis.GetPointLabelsVisibility(),
+                "textScale": dis.GetTextScale(),
+                "glyphType": dis.GetGlyphTypeAsString(),
+                "glyphScale": dis.GetGlyphScale(),
+                "glyphSize": dis.GetGlyphSize(),
+                "useGlyphScale": dis.GetUseGlyphScale(),
+                "sliceProjection": dis.GetSliceProjection(),
+                "sliceProjectionUseFiducialColor": dis.GetSliceProjectionUseFiducialColor(),
+                "sliceProjectionOutlinedBehindSlicePlane": dis.GetSliceProjectionOutlinedBehindSlicePlane(),
+                "sliceProjectionColor": dis.GetSliceProjectionColor(),
+                "sliceProjectionOpacity": dis.GetSliceProjectionOpacity(),
+                "lineThickness": dis.GetLineThickness(),
+                "lineColorFadingStart": dis.GetLineColorFadingStart(),
+                "lineColorFadingEnd": dis.GetLineColorFadingEnd(),
+                "lineColorFadingSaturation": dis.GetLineColorFadingSaturation(),
+                "lineColorFadingHueOffset": dis.GetLineColorFadingHueOffset(),
+                "handlesInteractive": dis.GetHandlesInteractive(),
+                "translationHandleVisibility": dis.GetTranslationHandleVisibility(),
+                "rotationHandleVisibility": dis.GetRotationHandleVisibility(),
+                "scaleHandleVisibility": dis.GetScaleHandleVisibility(),
+                "interactionHandleScale": dis.GetInteractionHandleScale(),
+                "snapMode": dis.GetSnapModeAsString(dis.GetSnapMode())
+            }
+        }
+        customJSON = json.dumps(customRawJSON, indent = 4)
+        customJSON = re.sub(r"(?<=\[)[^\[\]]+(?=])", self.repl_func, customJSON)
+        response = qt.QFileDialog.getSaveFileName(None, "select file","test", "JSON (*.json)", "JSON (*.json)")
+        print(response)
+        if response != "":
+            f = open(response, "w")
+            f.write(customJSON)
+            f.close()
+
+
+    def repl_func(self,match: re.Match):
+        return " ".join(match.group().split())
+    def stringToDict(self, txt):
+        txt = txt.replace(" ", "")
+        txt = txt.split(",")
+        dict = {}
+        sameKey = 1
+        for i in range(0,len(txt)-1,2):
+            if txt[i] in dict:
+                dict[txt[i]+"("+str(sameKey)+")"] = txt[i + 1]
+                sameKey = sameKey + 1
+            else:
+                dict[txt[i]] = txt[i+1]
+        return dict
+
+    def GetListOfControlPoints(self, fid):
+        listFid = []
+        for i in range(0, fid.GetNumberOfControlPoints()):
+            listFid.append({
+                "id": fid.GetNthControlPointID(i),
+                "label": fid.GetNthControlPointLabel(i),
+                "description": self.stringToDict(fid.GetNthControlPointDescription(i)),
+                "associatedNodeID": fid.GetNthControlPointAssociatedNodeID(i),
+                "position": fid.GetNthControlPointPosition(i),
+                "orientation": fid.GetNthControlPointOrientationMatrix(i),
+                "selected": fid.GetNthControlPointSelected(i),
+                "locked": fid.GetNthControlPointLocked(i),
+                "visibility": fid.GetNthControlPointVisibility(i),
+                "positionStatus": fid.GetPositionStatusAsString(fid.GetNthControlPointPositionStatus(i))
+            })
+        return listFid
+
+    def onApplyColorVTK(self):
+        slicer.util.showStatusMessage("START COLORING")
+        print("RUN COLORING ALGORITHM")
+        modelList = list(slicer.mrmlScene.GetNodesByClass('vtkMRMLModelDisplayNode'))
+        countColored = 0
+        for i in range(len(modelList)):
+            if modelList[i].GetName() in self.jsonColorFile:
+                modelList[i].SetColor(self.jsonColorFile[modelList[i].GetName()])
+                countColored += 1
+        print("END RUN COLORING ALGORITHM ")
+        slicer.util.showStatusMessage("END COLORING")
+
+        if countColored == 0:
+            print("NO VTK AVAILABLE TO COLOR")
+            print("Please, generate the VTK from the Contact Position Estimator module")
+            msgBox = qt.QMessageBox()
+            msgBox.setWindowTitle("Error: No VTK found")
+            msgBox.setText("Generate the VTK from Contact Position Estimator Module    \nor check the JSON color file")
+            msgBox.exec()
+
+
+    def onColorVTK(self):
+        """ on ContactPositionEstimator Tool Box Button Logic """
+        fileName = qt.QFileDialog.getOpenFileName()
+        f = open(fileName, "r")
+        fread = f.read()
+        if self.isjson(fread):
+            self.colorLE.setText(fileName)
+            # removed all the CRLF inside the electrodes.config to solve MAC bug
+            self.jsonColorFile = ""
+            for line in fread.splitlines():
+                self.jsonColorFile += line
+            self.jsonColorFile = json.loads(self.jsonColorFile)
+        else:
+            print("invalid JSON file")
+
+
+    def isjson(self, myjson):
+        try:
+            json.loads(myjson)
+        except ValueError as e:
+            return False
+        return True
+
     #######################################################################################
     # onSplitFiducialClick
     #######################################################################################
