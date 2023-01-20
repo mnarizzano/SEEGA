@@ -21,7 +21,6 @@ import math as m
 https://github.com/Slicer/Slicer/blob/master/Base/Python/slicer/ScriptedLoadableModule.py
 """
 
-
 #########################################################################################
 ####                                                                                 ####
 ####  Contact Position Estimator ########################################################
@@ -77,7 +76,9 @@ class ContactPositionEstimatorWidget(ScriptedLoadableModuleWidget):
         ScriptedLoadableModuleWidget.setup(self)
         #### Some variables
         self.configurationSetup()
+        self.lastSegmentation = []
         self.segmentationSetup()
+        self.fids = None
 
     #######################################################################################
     ### configurationSetup
@@ -162,6 +163,13 @@ class ContactPositionEstimatorWidget(ScriptedLoadableModuleWidget):
         self.segmentationFL.addRow("Fiducial List", self.fiducialCBox)
         #### Connect the fiducial list to the
         self.fiducialCBox.connect('currentNodeChanged(bool)', self.onfiducialCBox)
+        #### Update fiducial Push Button
+        self.updateFiducialPB = qt.QPushButton("Update Fiducial")
+        self.updateFiducialPB.toolTip = "Run the algorithm."
+        self.updateFiducialPB.enabled = True
+
+        self.segmentationFL.addRow(self.updateFiducialPB)
+        self.updateFiducialPB.connect('clicked(bool)', self.onfiducialCBox)
 
         #### Configure Segmentation - Section
         ### Read from files the list of the modules
@@ -191,8 +199,11 @@ class ContactPositionEstimatorWidget(ScriptedLoadableModuleWidget):
 
     #######################################################################################
     # onfiducialCBox   #
+    # def onfiducialCBox(self):
     #  Create dynamically the electrode table, by reading the fiducial list selected, by
     #  (1) Clear old Fiducial Table
+    #  self.clearTableclearTable()  # Eliminate the electrode list
+    #
     #  (2) If the selected fiducial list is not None Do
     #      (a) Read the fiducial list and
     #      (b) for each point pair create an Electrode object containing:
@@ -202,16 +213,20 @@ class ContactPositionEstimatorWidget(ScriptedLoadableModuleWidget):
     # NB: unselected points will not be parsed
     #######################################################################################
 
-    def onfiducialCBox(self):
-        # (1) CLEAR the list
-        self.clearTable()  # Eliminate the electrode list
+    
 
-        if self.fiducialCBox.currentNode() is None:
-            return
-        # (2.a) Read the fiducial list
-        operationLog = ""  # error/warning Log string
-        self.fids = self.fiducialCBox.currentNode()
+    def onfiducialCBox(self):
+
         self.electrodeList = []
+        self.clearTable()  # Eliminate the electrode list
+        operationLog = ""  # error/warning Log string
+        if self.fids is None:
+            if self.fiducialCBox.currentNode() is None:
+                return
+            # (2.a) Read the fiducial list
+            self.fids = self.fiducialCBox.currentNode()
+        else:
+            self.fids = slicer.mrmlScene.GetFirstNodeByClass('vtkMRMLMarkupsFiducialNode')
 
         # here we fill electrode list using fiducials
         for i in range(self.fids.GetNumberOfFiducials()):
@@ -252,11 +267,16 @@ class ContactPositionEstimatorWidget(ScriptedLoadableModuleWidget):
         # we sort the electrode in list alphabetically
         self.electrodeList = sorted(self.electrodeList,key=lambda x: x.name.text)
 
+        while not len(self.lastSegmentation) == 0:
+            self.segmentationFL.removeRow(self.lastSegmentation[0])
+            del self.lastSegmentation[0]
+
         # Link the electrode to the Form
         for elec in self.electrodeList:
             elec.computeLength()
             elec.setElectrodeModel(self.models)
             self.segmentationFL.addRow("", elec.row)
+            self.lastSegmentation.append(elec.row)
 
         # notify error
         slicer.util.showStatusMessage(operationLog)
@@ -278,6 +298,8 @@ class ContactPositionEstimatorWidget(ScriptedLoadableModuleWidget):
 
         self.volumeCtLabel = qt.QLabel("CT Volume")
         self.segmentationFL.addRow(self.volumeCtLabel, self.ctVolumeCB)
+        self.lastSegmentation.append(self.volumeCtLabel)
+        self.lastSegmentation.append(self.ctVolumeCB)
 
         # START Segmentation Button
         self.startSegmentationPB = qt.QPushButton("Start Segmentation")
@@ -322,7 +344,9 @@ class ContactPositionEstimatorWidget(ScriptedLoadableModuleWidget):
         horzGroupLayout.addWidget(self.createElectrodeVTKModels)
 
         self.segmentationFL.addRow("", horzGroupLayout)
+        self.lastSegmentation.append(horzGroupLayout)
         self.segmentationFL.addRow("", self.segmentationOnlyVTK)
+
 #        self.segmentationFL.addRow("", self.fiducialSplitBox)
 #        self.segmentationFL.addRow("", self.splitFiducialPB)
 
@@ -364,12 +388,21 @@ class ContactPositionEstimatorWidget(ScriptedLoadableModuleWidget):
     def onstartSegmentationPB(self):
         slicer.util.showStatusMessage("START SEGMENTATION")
         print ("RUN SEGMENTATION ALGORITHM ")
-        ContactPositionEstimatorLogic().runSegmentation(self.electrodeList, self.ctVolumeCB.currentNode(), \
+
+        
+        
+        # define exception when one electrode is misplaced
+        try:
+            ContactPositionEstimatorLogic().runSegmentation(self.electrodeList, self.ctVolumeCB.currentNode(), \
                                                         slicer.modules.ContactPositionEstimatorInstance.parentPath, \
                                                         slicer.modules.ContactPositionEstimatorInstance.deetoExecutablePath, \
                                                         self.models, self.createVTKModels, self.createElectrodeVTKModels, 0)
-        print ("END RUN SEGMENTATION ALGORITHM ")
-        slicer.util.showStatusMessage("END SEGMENTATION")
+            print ("END RUN SEGMENTATION ALGORITHM \n")
+            slicer.util.showStatusMessage("END SEGMENTATION")
+        except IndexError:
+            print("ERROR: electrode misplaced\nSTOP SEGMENTATION\n")
+            slicer.util.showStatusMessage("ERROR: electrode misplaced")
+
 
     #######################################################################################
     # onSplitFiducialClick
@@ -549,7 +582,7 @@ class ContactPositionEstimatorLogic(ScriptedLoadableModuleLogic):
                        str(-1 * elList[i].target[0]), str(-1 * elList[i].target[1]), \
                        str(elList[i].target[2]), '-m'] + \
                       list(map(str, models[elList[i].model.currentText][:-1]))
-            print (cmdLine)
+
             # RUN the command line cmdLine.
             # [NOTE] : I have used Popen since subprocess.check_output wont work at the moment
             # It Looks a problem of returning code from deetoS

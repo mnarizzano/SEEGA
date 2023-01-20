@@ -13,6 +13,12 @@ import re
 import collections
 import json
 import math
+try:
+    import nibabel as nb
+except:
+    slicer.util.pip_install('nibabel')
+    import nibabel as nb
+
 
 """Uses ScriptedLoadableModule base class, available at:
 https://github.com/Slicer/Slicer/blob/master/Base/Python/slicer/ScriptedLoadableModule.py
@@ -145,6 +151,70 @@ class FinalizerWidget(ScriptedLoadableModuleWidget):
         self.splitFiducialPB.enabled = True
         self.splitFiducialPB.connect('clicked(bool)',self.onsplitFiducialClick)
 
+        ### Collapsible Button Layout - Talairach Matrix
+        self.TalairachMatrix = ctk.ctkCollapsibleButton()
+        self.TalairachMatrix.text = "2.1 Talairach Matrix"
+        self.TalairachMatrix.contentsLineWidth = 1
+        self.layout.addWidget(self.TalairachMatrix)
+
+        ## Layout inside
+        self.talVTKinside = qt.QFormLayout(self.TalairachMatrix)
+
+        # Tool Box for changing deeto Executable
+        self.talairach = qt.QToolButton()
+        self.talairach.setText("...")
+        self.talairach.toolTip = "Select Talairach Matrix"
+        self.talairach.enabled = True
+        self.talairach.connect('clicked(bool)', self.onTalairachMatrix)
+
+        self.talairachFile = ""
+
+        # Line Edit button, where the executable path is shown
+        self.TalMatrix = qt.QLineEdit()
+        self.TalMatrix.setDisabled(True)
+        self.TalMatrix.setMaximumWidth(100)
+        self.TalMatrix.setFixedWidth(300)
+
+        # Buttons Layout
+        self.talButtons = qt.QHBoxLayout()
+        self.talButtons.addWidget(self.TalMatrix)
+        self.talButtons.addWidget(self.talairach)
+
+        # Add button to the layout
+        self.talVTKinside.addRow("Talairach file: ", self.talButtons)
+
+        ### Collapsible Button Layout - Read Orig.mgz
+        self.OrigFile = ctk.ctkCollapsibleButton()
+        self.OrigFile.text = "2.2 Load Orig"
+        self.OrigFile.contentsLineWidth = 1
+        self.layout.addWidget(self.OrigFile)
+
+        ## Layout inside
+        self.origVTKinside = qt.QFormLayout(self.OrigFile)
+
+        # Tool Box for changing deeto Executable
+        self.orig = qt.QToolButton()
+        self.orig.setText("...")
+        self.orig.toolTip = "Select Orig file"
+        self.orig.enabled = True
+        self.orig.connect('clicked(bool)', self.onOrigFile)
+
+        self.OFile = ""
+
+        # Line Edit button, where the executable path is shown
+        self.fileOrig = qt.QLineEdit()
+        self.fileOrig.setDisabled(True)
+        self.fileOrig.setMaximumWidth(100)
+        self.fileOrig.setFixedWidth(300)
+
+        # Buttons Layout
+        self.origButtons = qt.QHBoxLayout()
+        self.origButtons.addWidget(self.fileOrig)
+        self.origButtons.addWidget(self.orig)
+
+        # Add button to the layout
+        self.origVTKinside.addRow("Orig file: ", self.origButtons)
+
         self.finalizerFLSplit.addWidget(self.fiducialSplitBox)
         self.finalizerFLSplit.addWidget(self.splitFiducialPB)
 
@@ -153,6 +223,31 @@ class FinalizerWidget(ScriptedLoadableModuleWidget):
         self.finalizerCBDoc.text = "3. Report"
         self.finalizerCBDoc.contentsLineWidth = 1
         self.layout.addWidget(self.finalizerCBDoc)
+    
+
+    def onTalairachMatrix(self):
+        fileName = qt.QFileDialog.getOpenFileName()
+        f = open(fileName, "r")
+        fread = f.read()
+        try:
+            self.TalMatrix.setText(fileName)
+            e = 5
+            for line in fread.splitlines():
+                if e == 0:
+                    self.talairachFile += line.replace(";","").replace(" ",",") + ","
+                else:
+                    e -= 1
+            self.talairachFinalMatrix = numpy.reshape(self.talairachFile.replace(",,",",")[:-1].split(','), (3, 4))
+            self.talairachFinalMatrix = [[float(i) for i in inner_list] for inner_list in self.talairachFinalMatrix]
+        except:
+            print("invalid Talairach file")
+
+    def onOrigFile(self):
+        fileName = qt.QFileDialog.getOpenFileName()
+        try:
+            self.finalOrigFile = nb.load(fileName)
+        except:
+            print("invalid Orig file")
 
         ### Collapsible Button Layout - Color VTK
         self.colorVTK = ctk.ctkCollapsibleButton()
@@ -364,6 +459,28 @@ class FinalizerWidget(ScriptedLoadableModuleWidget):
     # onSplitFiducialClick
     #######################################################################################
     def onsplitFiducialClick(self):
+
+        # read orig.mgz file and talairach matrix
+        orig = self.finalOrigFile
+        TalXFM = numpy.matrix(self.talairachFinalMatrix)
+
+        # convert volume center from orig.mgz in ras coordinates
+        Norig = numpy.matrix(orig.header.get_vox2ras())
+
+        # convert volume center from orig.mgz in ras_tkr coordinates
+        TorigINV = numpy.linalg.inv(numpy.matrix(orig.header.get_vox2ras_tkr()))
+
+        # read get the fiducial file reconstructed
+        rawFiducialData = self.fiducialSplitBox.currentNode()
+        for i in range(rawFiducialData.GetNumberOfFiducials()):
+            P2 = [0.0, 0.0, 0.0]
+            rawFiducialData.GetNthFiducialPosition(i, P2)
+            P2T = numpy.matrix([[float(P2[0])],[float(P2[1])],[float(P2[2])],['1']], dtype=numpy.float64)
+
+            # convert from RAS to MNI and update rawFiducialData
+            MNI305RAS = TalXFM * Norig * TorigINV * P2T
+            rawFiducialData.SetNthControlPointPositionFromArray(i, MNI305RAS)
+
         """ onSplitFiducialClick  """
 
         def uniquify(seq):
@@ -374,8 +491,8 @@ class FinalizerWidget(ScriptedLoadableModuleWidget):
                     checked.append(e)
             return checked
 
-        # read get the fiducial file reconstructed
-        fiducialData = self.fiducialSplitBox.currentNode()
+        # copy rawFiducialData in fiducialData
+        fiducialData = rawFiducialData
 
         # Get channel names
         chLabels = [fiducialData.GetNthFiducialLabel(i) for i in range(fiducialData.GetNumberOfFiducials())]

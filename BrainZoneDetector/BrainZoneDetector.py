@@ -110,7 +110,7 @@ class BrainZoneDetectorWidget(ScriptedLoadableModuleWidget):
 
 
         self.ROISize = qt.QLineEdit("7")
-        self.ROISize.setToolTip("Define side length of cubic region centered in contact centroid")
+        self.ROISize.setToolTip("Define side length of Spherical ROI region centered in contact centroid")
         self.ROISize.setInputMask("D")
 
         # Run Zone Detection button
