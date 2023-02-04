@@ -223,31 +223,6 @@ class FinalizerWidget(ScriptedLoadableModuleWidget):
         self.finalizerCBDoc.text = "3. Report"
         self.finalizerCBDoc.contentsLineWidth = 1
         self.layout.addWidget(self.finalizerCBDoc)
-    
-
-    def onTalairachMatrix(self):
-        fileName = qt.QFileDialog.getOpenFileName()
-        f = open(fileName, "r")
-        fread = f.read()
-        try:
-            self.TalMatrix.setText(fileName)
-            e = 5
-            for line in fread.splitlines():
-                if e == 0:
-                    self.talairachFile += line.replace(";","").replace(" ",",") + ","
-                else:
-                    e -= 1
-            self.talairachFinalMatrix = numpy.reshape(self.talairachFile.replace(",,",",")[:-1].split(','), (3, 4))
-            self.talairachFinalMatrix = [[float(i) for i in inner_list] for inner_list in self.talairachFinalMatrix]
-        except:
-            print("invalid Talairach file")
-
-    def onOrigFile(self):
-        fileName = qt.QFileDialog.getOpenFileName()
-        try:
-            self.finalOrigFile = nb.load(fileName)
-        except:
-            print("invalid Orig file")
 
         ### Collapsible Button Layout - Color VTK
         self.colorVTK = ctk.ctkCollapsibleButton()
@@ -321,6 +296,32 @@ class FinalizerWidget(ScriptedLoadableModuleWidget):
         self.btnSaveJSON.setMaximumWidth(100)
         self.btnSaveJSON.setFixedWidth(300)
         self.cssIn.addRow("", self.btnSaveJSON)
+    
+
+    def onTalairachMatrix(self):
+        fileName = qt.QFileDialog.getOpenFileName()
+        f = open(fileName, "r")
+        fread = f.read()
+        try:
+            self.TalMatrix.setText(fileName)
+            e = 5
+            for line in fread.splitlines():
+                if e == 0:
+                    self.talairachFile += line.replace(";","").replace(" ",",") + ","
+                else:
+                    e -= 1
+            self.talairachFinalMatrix = numpy.reshape(self.talairachFile.replace(",,",",")[:-1].split(','), (3, 4))
+            self.talairachFinalMatrix = [[float(i) for i in inner_list] for inner_list in self.talairachFinalMatrix]
+        except:
+            print("invalid Talairach file")
+
+    def onOrigFile(self):
+        fileName = qt.QFileDialog.getOpenFileName()
+        try:
+            self.finalOrigFile = nb.load(fileName)
+        except:
+            print("invalid Orig file")
+
 
 
 
