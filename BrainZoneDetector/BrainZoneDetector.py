@@ -44,6 +44,15 @@ class BrainZoneDetectorWidget(ScriptedLoadableModuleWidget):
         ScriptedLoadableModuleWidget.setup(self)
 
         # [TODO]
+        brainzonepath = slicer.modules.brainzonedetector.path
+        brainzonepath = brainzonepath.replace("BrainZoneDetector.py","Resources/FreeSurferColorLUT20120827.txt")
+        self.lutPath = (os.path.join(brainzonepath))
+        print(self.lutPath)
+        print(os.path.join(slicer.app.slicerHome))
+        """
+        !!! commented code because each new version of 3dslicer has a different path
+        !!! better to save the file for colorlut inside this module folder
+
         # Si potrebbe avere un file di configurazione che contiene eventualmente un path alla colorlut
         # Se non e' vuoto allora lo prendo se no prendo questo di default
         if platform.system() == "Darwin":
@@ -56,9 +65,10 @@ class BrainZoneDetectorWidget(ScriptedLoadableModuleWidget):
                             #os.path.join(slicer.app.slicerHome,'NA-MIC/Extensions-30893/SlicerFreeSurfer/share/Slicer-5.0/qt-loadable-modules/FreeSurferImporter/FreeSurferColorLUT20060522.txt'), \
                             os.path.join(slicer.app.slicerHome,'NA-MIC/Extensions-30893/SlicerFreeSurfer/share/Slicer-5.0/qt-loadable-modules/FreeSurferImporter/FreeSurferColorLUT20150729.txt'))
                             #os.path.join(slicer.app.slicerHome,'NA-MIC/Extensions-30893/SlicerFreeSurfer/share/Slicer-5.0/qt-loadable-modules/FreeSurferImporter/Simple_surface_labels2002.txt'))
-
-
         print (self.lutPath)
+        """
+
+        
         # [END TODO]
 
         atlasNode = slicer.mrmlScene.GetNodesByName('aparc*').GetItemAsObject(0)
@@ -105,7 +115,7 @@ class BrainZoneDetectorWidget(ScriptedLoadableModuleWidget):
         # fill selector with available files
         self.lutSelector.addItem('FreeSurferColorLUT20120827')
         #self.lutSelector.addItem('FreeSurferColorLUT20060522')
-        self.lutSelector.addItem('FreeSurferColorLUT20150729')
+        #self.lutSelector.addItem('FreeSurferColorLUT20150729')
         #self.lutSelector.addItem('Simple_surface_labels2002')
 
 
@@ -161,7 +171,7 @@ class BrainZoneDetectorLogic(ScriptedLoadableModuleLogic):
 
     def runZoneDetection(self, fids, inputAtlas, colorLut, sideLength,lutIdx):
         # initialize variables that will hold the number of fiducials
-        nFids = fids.GetNumberOfFiducials()
+        nFids = fids.GetNumberOfControlPoints()
         # the volumetric atlas
         atlas = slicer.util.array(inputAtlas.GetName())
         # an the transformation matrix from RAS coordinte to Voxels
@@ -174,7 +184,7 @@ class BrainZoneDetectorLogic(ScriptedLoadableModuleLogic):
         # read it again.
         # FSLUT will hold for each brain area its tag and name
         FSLUT = {}
-        with open(colorLut[lutIdx], 'r') as f:
+        with open(colorLut, 'r') as f:
             for line in f:
                 if not re.match('^#', line) and len(line) > 10:
                     lineTok = re.split('\s+', line)
@@ -204,13 +214,13 @@ class BrainZoneDetectorLogic(ScriptedLoadableModuleLogic):
             slicer.app.processEvents()
 
             # Only for Active Fiducial points the GMPI is computed
-            if fids.GetNthFiducialSelected(i) == True:
+            if fids.GetNthControlPointSelected(i) == True:
 
                 # instantiate the variable which holds the point
                 currContactCentroid = [0, 0, 0]
 
                 # copy current position from FiducialList
-                fids.GetNthFiducialPosition(i, currContactCentroid)
+                fids.GetNthControlPointPosition(i, currContactCentroid)
 
                 # append 1 at the end of array before applying transform
                 currContactCentroid.append(1)
@@ -252,7 +262,8 @@ class BrainZoneDetectorLogic(ScriptedLoadableModuleLogic):
                 totPercentage = numpy.sum(itemfreq)
 
                 # Recover the real patch names
-                patchNames = [re.sub('((ctx_.h_)|(Right|Left)-(Cerebral-)?)', '', FSLUT[pValues]) for pValues in uniqueValues]
+                # Some volumes don't have some pValues. In that case, NotFound is used. Otherwise it crashes during execution.
+                patchNames = [re.sub('((ctx_.h_)|(Right|Left)-(Cerebral-)?)', '', FSLUT.get(pValues, 'NotFound')) for pValues in uniqueValues]
                 patchAcron = list()
                 for currPatchName in patchNames:
                     currPatchAcron = ''
