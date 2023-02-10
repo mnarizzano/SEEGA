@@ -191,7 +191,8 @@ class ContactPositionEstimatorWidget(ScriptedLoadableModuleWidget):
             a = qt.QLabel(self.tableCaption[i], self.captionGB)
             a.setMaximumWidth(self.tableHsize[i])
             a.setMaximumHeight(20)
-            a.setStyleSheet("qproperty-alignment: AlignCenter;")
+            #a.setStyleSheet("qproperty-alignment: AlignCenter;")
+            a.setStyleSheet("QLabel { text-alignment: center; }")
             self.captionBL.addWidget(a)
 
         self.segmentationFL.addRow("", self.captionGB)
@@ -229,13 +230,13 @@ class ContactPositionEstimatorWidget(ScriptedLoadableModuleWidget):
             self.fids = slicer.mrmlScene.GetFirstNodeByClass('vtkMRMLMarkupsFiducialNode')
 
         # here we fill electrode list using fiducials
-        for i in range(self.fids.GetNumberOfFiducials()):
-            if self.fids.GetNthFiducialSelected(i) == True:
+        for i in range(self.fids.GetNumberOfControlPoints()):
+            if self.fids.GetNthControlPointSelected(i) == True:
                 P2 = [0.0, 0.0, 0.0]
-                self.fids.GetNthFiducialPosition(i, P2)
+                self.fids.GetNthControlPointPosition(i, P2)
                 # [WARNING] The fiducial name convention is hard coded, change please[/WARNING]#
                 # replace name with _1 or 1 with empty char
-                self.name = re.sub(r"_?1", "", self.fids.GetNthFiducialLabel(i))
+                self.name = re.sub(r"_?1", "", self.fids.GetNthControlPointLabel(i))
                 # find the electrode in list with the same name
                 el = [x for x in self.electrodeList if str(x.name.text) == self.name]
                 if len(el) > 0:
@@ -285,8 +286,7 @@ class ContactPositionEstimatorWidget(ScriptedLoadableModuleWidget):
         # GUI CT Segmentation - Section
         # CT selector  input volume selector
         self.ctVolumeCB = slicer.qMRMLNodeComboBox()
-        self.ctVolumeCB.nodeTypes = (("vtkMRMLScalarVolumeNode"), "")
-        self.ctVolumeCB.addAttribute("vtkMRMLScalarVolumeNode", "LabelMap", 0)
+        self.ctVolumeCB.nodeTypes = ["vtkMRMLScalarVolumeNode"]
         self.ctVolumeCB.selectNodeUponCreation = True
         self.ctVolumeCB.addEnabled = False
         self.ctVolumeCB.removeEnabled = False
@@ -446,7 +446,7 @@ class ContactPositionEstimatorWidget(ScriptedLoadableModuleWidget):
 #                P = [0.0, 0.0, 0.0]
 #                fiducialData.GetNthFiducialPosition(chIdx + offset, P)
 #                newFids.AddFiducial(P[0], P[1], P[2])
-#                newFids.SetNthFiducialLabel(chIdx, fiducialData.GetNthFiducialLabel(chIdx + offset))
+#                newFids.SetNthControlPointLabel(chIdx, fiducialData.GetNthFiducialLabel(chIdx + offset))
 #                newFids.SetNthMarkupDescription(chIdx, fiducialData.GetNthMarkupDescription(chIdx + offset))
 #
 #            slicer.modules.markups.logic().SetAllMarkupsLocked(newFids, True)
@@ -620,7 +620,7 @@ class ContactPositionEstimatorLogic(ScriptedLoadableModuleLogic):
                 # pressed Start Segmentation button
                 if execMode == 0:
                     a = fidNode.AddControlPoint(float(points[p]), float(points[p + 1]), float(points[p + 2]))
-                    fidNode.SetNthFiducialLabel(a, name + str((p / 3) + 1))
+                    fidNode.SetNthControlPointLabel(a, name + str((p / 3) + 1))
                     fidNode.SetNthControlPointDescription(a, elList[i].model.currentText)
                     listF[len(listF) - 1].append(a)
 
@@ -679,7 +679,7 @@ class ContactPositionEstimatorLogic(ScriptedLoadableModuleLogic):
                 model.SetName(name + "_direction")
                 model.SetAndObservePolyData(lineSource.GetOutput())
                 modelDisplay = slicer.vtkMRMLModelDisplayNode()
-                modelDisplay.SetSliceIntersectionVisibility(True)  # Hide in slice view
+                modelDisplay.SetVisibility2D(True)  # Hide in slice view
                 modelDisplay.SetVisibility(True)  # Show in 3D view
                 modelDisplay.SetColor(1, 0, 0)
                 modelDisplay.SetLineWidth(2)
@@ -689,7 +689,7 @@ class ContactPositionEstimatorLogic(ScriptedLoadableModuleLogic):
 
             # Lock all markup
             if execMode == 0:
-                slicer.modules.markups.logic().SetAllMarkupsLocked(fidNode, True)
+                slicer.modules.markups.logic().SetAllControlPointsLocked(fidNode, True)
 
             # update progress bar
             self.pb.setValue(i + 1)
@@ -749,11 +749,11 @@ class ContactPositionEstimatorLogic(ScriptedLoadableModuleLogic):
         matrix4 = self.mat3To4(R, float(points[p]), float(points[p + 1]), float(points[p + 2]))
         rMatrix = self.mat4x4Gen(matrix4)
         # add the rotation to the model
-        cylinderTS.SetAndObserveMatrixTransformToParent(rMatrix)
+        cylinderTS.SetMatrixTransformToParent(rMatrix)
 
         cylindermodelDisplay = slicer.vtkMRMLModelDisplayNode()
         cylindermodelDisplay.SetName(name + str((p / 3) + 1))
-        cylindermodelDisplay.SetSliceIntersectionVisibility(True)  # Hide in slice view
+        cylindermodelDisplay.SetVisibility2D(True)  # Hide in slice view
         cylindermodelDisplay.SetVisibility(True)  # Show in 3D view
         cylindermodelDisplay.SetColor(1, 0, 0)
         cylindermodelDisplay.SetLineWidth(2)
@@ -809,7 +809,7 @@ class ContactPositionEstimatorLogic(ScriptedLoadableModuleLogic):
             # var a is the single fiducial. if it's None we are executing Generate VTK without any fiducials in the scene
             if a != None:
                 # if outside skull
-                fidNode.SetNthFiducialLabel(a, name + str((p / 3) + 1) + "#")
+                fidNode.SetNthControlPointLabel(a, name + str((p / 3) + 1) + "#")
                 cylindermodelDisplay.SetName(name + str((p / 3) + 1) + "#")
             return 0
         else:
@@ -832,7 +832,7 @@ class ContactPositionEstimatorLogic(ScriptedLoadableModuleLogic):
         if mode == 3 or mode == 5:
             for j in listOutVTK:
                 if (j[2] / 3 + 1) < thresholdGlobal:
-                    j[1].SetNthFiducialLabel(j[3], j[4] + str(j[2] / 3 + 1) + "$")
+                    j[1].SetNthControlPointLabel(j[3], j[4] + str(j[2] / 3 + 1) + "$")
                     j[0].SetColor(1, 1, 0)
                 else:
                     break
@@ -932,21 +932,24 @@ class Electrode():
 
         self.model.setMaximumWidth(hsize[1])
         self.model.setMaximumHeight(20)
-        self.model.setStyleSheet("qproperty-alignment: AlignCenter;")
+        #self.model.setStyleSheet("qproperty-alignment: AlignCenter;")
+        self.model.setStyleSheet("QLabel { text-alignment: center; }")
         self.hlayout.addWidget(self.model)
 
         #### Tail Check Box
         self.tailCheckBox = qt.QCheckBox(self.row)
         self.tailCheckBox.setMaximumWidth(hsize[2])
         self.tailCheckBox.setMaximumHeight(20)
-        self.tailCheckBox.setStyleSheet("qproperty-alignment: AlignCenter;")
+        #self.tailCheckBox.setStyleSheet("qproperty-alignment: AlignCenter;")
+        self.tailCheckBox.setStyleSheet("QLabel { text-alignment: center; }")
         self.hlayout.addWidget(self.tailCheckBox)
 
         ### Head CheckBox
         self.headCheckBox = qt.QCheckBox(self.row)
         self.headCheckBox.setMaximumWidth(hsize[3])
         self.headCheckBox.setMaximumHeight(20)
-        self.headCheckBox.setStyleSheet("qproperty-alignment: AlignCenter;")
+        #self.headCheckBox.setStyleSheet("qproperty-alignment: AlignCenter;")
+        self.headCheckBox.setStyleSheet("QLabel { text-alignment: center; }")
         self.hlayout.addWidget(self.headCheckBox)
 
     def computeLength(self):
