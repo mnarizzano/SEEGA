@@ -76,9 +76,9 @@ class ContactPositionEstimatorWidget(ScriptedLoadableModuleWidget):
         ScriptedLoadableModuleWidget.setup(self)
         #### Some variables
         self.configurationSetup()
-        self.lastSegmentation = []
         self.segmentationSetup()
         self.fids = None
+        self.countLastSeg = 0
 
     #######################################################################################
     ### configurationSetup
@@ -269,18 +269,16 @@ class ContactPositionEstimatorWidget(ScriptedLoadableModuleWidget):
         self.electrodeList = sorted(self.electrodeList,key=lambda x: x.name.text)
 
         
-        while not len(self.lastSegmentation) == 0:
-            self.segmentationFL.removeRow(self.lastSegmentation[0])
-            del self.lastSegmentation[0]
-        
-
+        for i in range(0, self.countLastSeg):
+            self.segmentationFL.removeRow(self.segmentationFL.rowCount()-1)
+        self.countLastSeg = 0
 
         # Link the electrode to the Form
         for elec in self.electrodeList:
             elec.computeLength()
             elec.setElectrodeModel(self.models)
             self.segmentationFL.addRow("", elec.row)
-            self.lastSegmentation.append(elec.row)
+            self.countLastSeg=self.countLastSeg+1
 
         # notify error
         slicer.util.showStatusMessage(operationLog)
@@ -301,8 +299,7 @@ class ContactPositionEstimatorWidget(ScriptedLoadableModuleWidget):
 
         self.volumeCtLabel = qt.QLabel("CT Volume")
         self.segmentationFL.addRow(self.volumeCtLabel, self.ctVolumeCB)
-        self.lastSegmentation.append(self.volumeCtLabel)
-        self.lastSegmentation.append(self.ctVolumeCB)
+        self.countLastSeg=self.countLastSeg+1
 
 
         # START Segmentation Button
@@ -349,8 +346,8 @@ class ContactPositionEstimatorWidget(ScriptedLoadableModuleWidget):
         
         self.segmentationFL.addRow("", horzGroupLayout)
         self.segmentationFL.addRow("", self.segmentationOnlyVTK)
-        self.lastSegmentation.append(horzGroupLayout)
-        self.lastSegmentation.append(self.segmentationOnlyVTK)
+        self.countLastSeg=self.countLastSeg+1
+        self.countLastSeg=self.countLastSeg+1
 
 #        self.segmentationFL.addRow("", self.fiducialSplitBox)
 #        self.segmentationFL.addRow("", self.splitFiducialPB)
