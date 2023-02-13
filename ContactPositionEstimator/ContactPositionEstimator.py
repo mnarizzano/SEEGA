@@ -268,9 +268,12 @@ class ContactPositionEstimatorWidget(ScriptedLoadableModuleWidget):
         # we sort the electrode in list alphabetically
         self.electrodeList = sorted(self.electrodeList,key=lambda x: x.name.text)
 
+        
         while not len(self.lastSegmentation) == 0:
             self.segmentationFL.removeRow(self.lastSegmentation[0])
             del self.lastSegmentation[0]
+        
+
 
         # Link the electrode to the Form
         for elec in self.electrodeList:
@@ -300,6 +303,7 @@ class ContactPositionEstimatorWidget(ScriptedLoadableModuleWidget):
         self.segmentationFL.addRow(self.volumeCtLabel, self.ctVolumeCB)
         self.lastSegmentation.append(self.volumeCtLabel)
         self.lastSegmentation.append(self.ctVolumeCB)
+
 
         # START Segmentation Button
         self.startSegmentationPB = qt.QPushButton("Start Segmentation")
@@ -342,10 +346,11 @@ class ContactPositionEstimatorWidget(ScriptedLoadableModuleWidget):
         horzGroupLayout.addWidget(self.startSegmentationPB)
         horzGroupLayout.addWidget(self.createVTKModels)
         horzGroupLayout.addWidget(self.createElectrodeVTKModels)
-
+        
         self.segmentationFL.addRow("", horzGroupLayout)
-        self.lastSegmentation.append(horzGroupLayout)
         self.segmentationFL.addRow("", self.segmentationOnlyVTK)
+        self.lastSegmentation.append(horzGroupLayout)
+        self.lastSegmentation.append(self.segmentationOnlyVTK)
 
 #        self.segmentationFL.addRow("", self.fiducialSplitBox)
 #        self.segmentationFL.addRow("", self.splitFiducialPB)
