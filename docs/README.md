@@ -10,4 +10,3 @@ The third video is called **Brain Zone Detector** that from the recon file we go
 The fourth video is the **GMPIComputation** and it works the same as the second module: generate an output and display it in the description of each element of recon
 
 The last video is the **Finalizer** that has numerous tools to finalize your output such as: changing the visual output of your fiducial node, save your output in JSON and more
-[![Watch the video](https://i.imgur.com/vKb2F1B.png)](https://github.com/mnarizzano/SEEGA/blob/master/docs/prerequisite.mp4)
