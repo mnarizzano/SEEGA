@@ -1,8 +1,9 @@
 # Tutorial
 Inside the video/ folder are present the raw version (downloadable) of the video tutorial for using the SEEGA modules
 
-1. Prerequisite: initial setup to work correctly with the modules. [download](https://github.com/mnarizzano/SEEGA/blob/master/docs/tutorials/video/cpe.mp4)
+### Prerequisite
 
+Initial setup to work correctly with the modules. [download](https://github.com/mnarizzano/SEEGA/blob/master/docs/tutorials/video/cpe.mp4)
 
 
 https://user-images.githubusercontent.com/5982770/222180694-9eb7ea16-5279-406d-a371-20e83ac24662.mp4
