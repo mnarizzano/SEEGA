@@ -3,7 +3,7 @@ Inside the video/ folder are present the raw version (downloadable) of the video
 
 1. Prerequisite: itial setup to work correctly with the modules
 
-[![Demo Doccou alpha](http://share.gifyoutube.com/KzB6Gb.gif)](https://github.com/mnarizzano/SEEGA/blob/master/docs/tutorials/video/brainzone.mp4)
+[![Demo Doccou alpha](http://share.gifyoutube.com/KzB6Gb.gif)](https://github.com/mnarizzano/SEEGA/blob/master/docs/tutorials/video/brainzone.mp4?raw=true)
 
 
 ### Contact Position Estimator
