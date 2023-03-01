@@ -3,7 +3,7 @@ Inside the video/ folder are present the raw version (downloadable) of the video
 
 1. Prerequisite: itial setup to work correctly with the modules
 
-<video src='https://github.com/mnarizzano/SEEGA/blob/master/docs/tutorials/video/brainzone.mp4' width=180/>
+<video src='https://github.com/mnarizzano/SEEGA/blob/master/docs/tutorials/video/brainzone.mp4' width=180/> </video>
 
 
 ### Contact Position Estimator
