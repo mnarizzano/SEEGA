@@ -1,4 +1,4 @@
-# Tutorial
+# Tutorials
 Inside the video/ folder are present the raw version (downloadable) of the video tutorial for using the SEEGA modules
 
 ### Prerequisite
