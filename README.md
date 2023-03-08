@@ -13,7 +13,7 @@ Full installation instructions are provided [here](https://github.com/mnarizzano
 
 ## Background: 
 In the evaluation of Stereo-Electroencephalography (SEEG)
-signals, the physicist’s workflow involves several operations, including determining
+signals, the physician’s workflow involves several operations, including determining
 the position of individual electrode contacts in terms of both relationship to grey
 or white matter and location in specific brain regions. These operations are (i)
 generally carried out manually by experts with limited computer support, (ii)
