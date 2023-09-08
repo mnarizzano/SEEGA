@@ -2,7 +2,7 @@ import SimpleITK as sitk
 from numpy import array,zeros,float64,sum,empty,mean
 from numpy.linalg import norm
 
-from image_tools import *
+from DeetoS.image_tools import *
 
 class ElectrodeTrajectoryConstructor():
     
