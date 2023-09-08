@@ -17,6 +17,8 @@ import platform
 import sys
 import math as m
 
+from DeetoS.electrode_trajectory import *
+
 """Uses ScriptedLoadableModule base class, available at:
 https://github.com/Slicer/Slicer/blob/master/Base/Python/slicer/ScriptedLoadableModule.py
 """
@@ -131,6 +133,21 @@ class ContactPositionEstimatorWidget(ScriptedLoadableModuleWidget):
         self.configurationReload.setMaximumWidth(100)
         self.configurationReload.setFixedWidth(400)
         self.setupFL.addRow("", self.configurationReload)
+
+        # SELECTS the deeto version between the python and C++ implementation
+        self.useDeetoPython = qt.QCheckBox("Use DEETHON?")
+        self.useDeetoPython.toolTip = "choice between running the C++ implementation of DEETO or the Python one"
+        self.useDeetoPython.enabled = True
+        self.useDeetoPython.connect('clicked(bool)', self.hideDeetoExecutablePath)
+        self.setupFL.addRow("", self.useDeetoPython)
+
+    def hideDeetoExecutablePath(self):
+        not_use_deeton = not self.useDeetoPython.isChecked()
+        self.deetoButtonsHBL.setEnabled(not_use_deeton)
+        self.deetoTB.setEnabled(not_use_deeton)
+        self.deetoLE.setEnabled(not_use_deeton)
+        self.configurationReload.setEnabled(not_use_deeton)
+        
 
 
     def reloadConfiguration(self):
@@ -363,11 +380,11 @@ class ContactPositionEstimatorWidget(ScriptedLoadableModuleWidget):
     def onstartSegmentationOnlyVTK(self):
         slicer.util.showStatusMessage("START GENERATING VTK")
         print("RUN GENERATING ONLY VTK ALGORITHM ")
-        ContactPositionEstimatorLogic().runSegmentation(self.electrodeList, self.ctVolumeCB.currentNode(), \
-                                                        slicer.modules.ContactPositionEstimatorInstance.parentPath, \
-                                                        slicer.modules.ContactPositionEstimatorInstance.deetoExecutablePath, \
-                                                        self.models, self.createVTKModels,
-                                                        self.createElectrodeVTKModels, 1)
+        ContactPositionEstimatorLogic(False and self.useDeetoPython.checked).runSegmentation(self.electrodeList, self.ctVolumeCB.currentNode(), \
+                                                                   slicer.modules.ContactPositionEstimatorInstance.parentPath, \
+                                                                   slicer.modules.ContactPositionEstimatorInstance.deetoExecutablePath, \
+                                                                   self.models, self.createVTKModels,
+                                                                   self.createElectrodeVTKModels, 1)
         print("END RUN GENERATING ONLY VTK ALGORITHM ")
         slicer.util.showStatusMessage("END GENERATING VTK")
 
@@ -395,10 +412,10 @@ class ContactPositionEstimatorWidget(ScriptedLoadableModuleWidget):
         
         # define exception when one electrode is misplaced
         try:
-            ContactPositionEstimatorLogic().runSegmentation(self.electrodeList, self.ctVolumeCB.currentNode(), \
-                                                        slicer.modules.ContactPositionEstimatorInstance.parentPath, \
-                                                        slicer.modules.ContactPositionEstimatorInstance.deetoExecutablePath, \
-                                                        self.models, self.createVTKModels, self.createElectrodeVTKModels, 0)
+            ContactPositionEstimatorLogic(False and self.useDeetoPython.checked).runSegmentation(self.electrodeList, self.ctVolumeCB.currentNode(), \
+                                                                       slicer.modules.ContactPositionEstimatorInstance.parentPath, \
+                                                                       slicer.modules.ContactPositionEstimatorInstance.deetoExecutablePath, \
+                                                                       self.models, self.createVTKModels, self.createElectrodeVTKModels, 0)
             print ("END RUN SEGMENTATION ALGORITHM \n")
             slicer.util.showStatusMessage("END SEGMENTATION")
         except IndexError:
@@ -503,9 +520,10 @@ class ContactPositionEstimatorWidget(ScriptedLoadableModuleWidget):
 #
 #########################################################################################
 class ContactPositionEstimatorLogic(ScriptedLoadableModuleLogic):
-    def __init__(self):
+    def __init__(self,useDeetoPython=False):
         # Create a Progress Bar
         self.pb = qt.QProgressBar()
+        self.useDeetoPython = useDeetoPython
 
     #######################################################################################
     # runSegmentation
@@ -571,34 +589,50 @@ class ContactPositionEstimatorLogic(ScriptedLoadableModuleLogic):
         listF = slicer.modules.ContactPositionEstimatorInstance.listFiducial
         if execMode == 0:
             listF = list()
-
+        
+        useDeethon = self.useDeetoPython
+        if useDeethon: 
+            from numpy import array
+            inverseVector = array([-1,-1,1],dtype=float)
+            etc = ElectrodeTrajectoryConstructor(self.tmpVolumeFile,threshold)
+        
+        from time import time
         # For each electrode "e":
         for i in range(len(elList)):
+            
             tFlag = "-l" if (elList[i].tailCheckBox.isChecked() == True) else "-t"
             hFlag = "-h" if (elList[i].headCheckBox.isChecked() == True) else "-e"
-            # Construct the cmdLine to run the segmentation on "e"
 
-            cmdLine = [str(deetoExe), '-s', str(threshold), '-ct', str(self.tmpVolumeFile), \
-                       hFlag, str(-1 * elList[i].entry[0]), str(-1 * elList[i].entry[1]), \
-                       str(elList[i].entry[2]), tFlag, \
-                       str(-1 * elList[i].target[0]), str(-1 * elList[i].target[1]), \
-                       str(elList[i].target[2]), '-m'] + \
-                      list(map(str, models[elList[i].model.currentText][:-1]))
+            if not useDeethon:
+                # Construct the cmdLine to run the segmentation on "e"
+                start_time = time()
+                cmdLine = [str(deetoExe), '-s', str(threshold), '-ct', str(self.tmpVolumeFile), \
+                           hFlag, str(-1 * elList[i].entry[0]), str(-1 * elList[i].entry[1]), \
+                           str(elList[i].entry[2]), tFlag, \
+                           str(-1 * elList[i].target[0]), str(-1 * elList[i].target[1]), \
+                           str(elList[i].target[2]), '-m'] + \
+                          list(map(str, models[elList[i].model.currentText][:-1]))
+                print(models[elList[i].model.currentText])
 
-            # RUN the command line cmdLine.
-            # [NOTE] : I have used Popen since subprocess.check_output wont work at the moment
-            # It Looks a problem of returning code from deetoS
-            points = subprocess.Popen(cmdLine, stdout=subprocess.PIPE).communicate()[0].splitlines()
-            # print points
-
-            ### For each of the point returned by deeto we add it to the new markup fiducial
-            name = elList[i].name.text
-
+                # RUN the command line cmdLine.
+                # [NOTE] : I have used Popen since subprocess.check_output wont work at the moment
+                # It Looks a problem of returning code from deetoS
+                points = subprocess.Popen(cmdLine, stdout=subprocess.PIPE).communicate()[0].splitlines()
+                print(points)
+                # print points
+                #print(time()-start_time)
+            else: #TODO find if elList[i].entry and .target refer to entry and target or can be also head and tail 
+                n = models[elList[i].model.currentText]
+                points = etc.compute_electrode_trajectory({hFlag[1]: inverseVector*elList[i].entry,tFlag[1]: inverseVector*elList[i].target},n[1],n[2],n[3:-1]).ravel()
             ### For each electrode we create a line from the start point to the last + 3mm
             ### Look for two points p1 and p3 starting from p1 and p2 (first and last point segmented
             last = len(points) - 1
             p1 = [float(points[0]), float(points[1]), float(points[2])]
             p2 = [float(points[last - 2]), float(points[last - 1]), float(points[last])]
+
+            ### For each of the point returned by deeto we add it to the new markup fiducial
+            name = elList[i].name.text
+
             delta = math.sqrt(
                 math.pow((p1[0] - p2[0]), 2) + math.pow((p1[1] - p2[1]), 2) + math.pow((p1[2] - p2[2]), 2))
             p3 = [0.0, 0.0, 0.0]
@@ -988,3 +1022,4 @@ class Electrode():
     def delete(self):
         self.row.setParent(None)
         self.row.deleteLater()
+
