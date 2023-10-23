@@ -99,9 +99,9 @@ class ContactPositionEstimatorWidget(ScriptedLoadableModuleWidget):
         self.setupFL = qt.QFormLayout(self.setupCB)
 
         # SELECTS the deeto version between the python and C++ implementation
-        self.useDeetoPython = qt.QCheckBox("Use DEETHON?")
+        self.useDeetoPython = qt.QCheckBox("Use DEETHON?"+ (" (blocked: 3DSlicer version < 5)" if slicer.app.majorVersion < 5 else ""))
         self.useDeetoPython.toolTip = "choice between running the C++ implementation of DEETO or the Python one"
-        self.useDeetoPython.enabled = True
+        self.useDeetoPython.enabled = slicer.app.majorVersion >= 5
         self.useDeetoPython.connect('clicked(bool)', self.hideDeetoExecutablePath)
         self.setupFL.addRow("DEETO implementation:", self.useDeetoPython)
 
@@ -141,8 +141,9 @@ class ContactPositionEstimatorWidget(ScriptedLoadableModuleWidget):
         self.configurationReload.setFixedWidth(400)
         self.setupFL.addRow("", self.configurationReload)
 
-        self.useDeetoPython.setChecked(True)
-        self.hideDeetoExecutablePath()
+        self.useDeetoPython.setChecked(slicer.app.majorVersion >= 5)
+        if slicer.app.majorVersion >= 5:
+            self.hideDeetoExecutablePath()
 
 
 
@@ -549,27 +550,38 @@ class ContactPositionEstimatorLogic(ScriptedLoadableModuleLogic):
         # compute the threshold as the 45% of points not null
         threshold = n_vector[int(n_vector.size * 0.45)]
 
-        ### CREATE A NEW FIDUCIAL LIST CALLED ...... [TODO]
-        #mlogic = slicer.modules.markups.logic()
-        mlogic = slicer.modules.markups.logic().GetDefaultMarkupsDisplayNode()
-
-        ###
-        ### [TODO] Accrocchio, non so come cambiare questi parametri solo
-        ### per il nodo corrente, invece che di default
-        #mlogic.SetDefaultMarkupsDisplayNodeTextScale(1.3)
-        #mlogic.SetDefaultMarkupsDisplayNodeGlyphScale(1.5)
-        #mlogic.SetDefaultMarkupsDisplayNodeColor(0.39, 0.78, 0.78)  # AZZURRO
-        #mlogic.SetDefaultMarkupsDisplayNodeSelectedColor(0.39, 1.0, 0.39)  # VERDONE
-
-        mlogic.SetTextScale(3.0)
-        mlogic.SetGlyphScale(3.0)
-        mlogic.SetColor(0.39, 0.78, 0.78)  # AZZURRO
-        mlogic.SetSelectedColor(0.39, 1.0, 0.39)  # VERDONE
-
         if execMode == 0:
             fidNode = slicer.util.getNode(slicer.modules.markups.logic().AddNewFiducialNode("recon"))
         else:
             fidNode = slicer.modules.ContactPositionEstimatorInstance.fiducialNode
+
+        ### CREATE A NEW FIDUCIAL LIST CALLED ...... [TODO]
+        #mlogic = slicer.modules.markups.logic()
+        #setting aliases for older versions of slicer
+        if slicer.app.majorVersion < 5:
+            mlogic = slicer.modules.markups.logic()
+            mlogic.SetDefaultMarkupsDisplayNodeTextScale(1.3)
+            mlogic.SetDefaultMarkupsDisplayNodeGlyphScale(1.5)
+            mlogic.SetDefaultMarkupsDisplayNodeColor(0.39, 0.78, 0.78) 
+            mlogic.SetDefaultMarkupsDisplayNodeSelectedColor(0.39, 1.0, 0.39)
+            fidNode.AddControlPoint = fidNode.AddFiducial
+            fidNode.SetNthControlPointLabel = fidNode.SetNthFiducialLabel
+            slicer.modules.markups.logic().SetAllControlPointsLocked = slicer.modules.markups.logic().SetAllMarkupsLocked
+        else:
+            mlogic = slicer.modules.markups.logic().GetDefaultMarkupsDisplayNode()
+
+            ###
+            ### [TODO] Accrocchio, non so come cambiare questi parametri solo
+            ### per il nodo corrente, invece che di default
+            #mlogic.SetDefaultMarkupsDisplayNodeTextScale(1.3)
+            #mlogic.SetDefaultMarkupsDisplayNodeGlyphScale(1.5)
+            #mlogic.SetDefaultMarkupsDisplayNodeColor(0.39, 0.78, 0.78)  # AZZURRO
+            #mlogic.SetDefaultMarkupsDisplayNodeSelectedColor(0.39, 1.0, 0.39)  # VERDONE
+
+            mlogic.SetTextScale(3.0)
+            mlogic.SetGlyphScale(3.0)
+            mlogic.SetColor(0.39, 0.78, 0.78)  # AZZURRO
+            mlogic.SetSelectedColor(0.39, 1.0, 0.39)  # VERDONE
 
         # Save the volume as has been modified
         self.tmpVolumeFile = parentPath + "/Tmp/tmp.nii.gz"
@@ -652,7 +664,8 @@ class ContactPositionEstimatorLogic(ScriptedLoadableModuleLogic):
                 if execMode == 0:
                     a = fidNode.AddControlPoint(float(points[p]), float(points[p + 1]), float(points[p + 2]))
                     fidNode.SetNthControlPointLabel(a, name + str((p / 3) + 1))
-                    fidNode.SetNthControlPointDescription(a, elList[i].model.currentText)
+                    if slicer.app.majorVersion >= 5: # there's no fiducial description method in 4.6.x versions of 3DSlicer
+                        fidNode.SetNthControlPointDescription(a, elList[i].model.currentText)
                     listF[len(listF) - 1].append(a)
 
                     # if checkbox generate vtk is checked
