@@ -11,6 +11,9 @@ class ElectrodeTrajectoryConstructor():
     MAX_REGION_SIZE = 10
 
     def _compute_threshold(self,itk_image):
+        '''
+        Computes the threshold of the image to classify electrodes and brain/noise by finding the 45th quantile of the distribution of pixels 
+        '''
         image = sitk.GetArrayFromImage(itk_image)
         image = image[image!=0].ravel()
         return sorted(image)[int(len(image)*0.45)]
@@ -64,6 +67,11 @@ class ElectrodeTrajectoryConstructor():
     def _get_point_with_highest_momentum(self,center_index,min_region_size,max_region_size):
         '''
         iterates from a min region size to a max region size and stops as soon as a center of gravity in the region is found
+        
+        Returns
+        --------
+                
+        the point with highest momentum, otherwise returns None
         '''
         img = self._image
         curr_region_size = min_region_size

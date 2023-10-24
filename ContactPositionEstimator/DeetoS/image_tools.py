@@ -13,7 +13,7 @@ def get_squared_region(center_point,region_size,clipping_min_max=None):
     '''
     creates a tuple of ndimensions of slices with start (center - region_size) and stop (center + region_size + 1) values that map a (possibly) squared region\n
     if clipping_min_max tuple is provided the region is clipped with borders (both inclusive)\n
-    supports any dimension but does not check correctness of input to go brrrr
+    supports any dimension but does not check correctness of input
     '''
     if clipping_min_max is not None:
         min_v, max_v = clipping_min_max[0],clipping_min_max[1]
@@ -35,7 +35,7 @@ def get_region_size(region):
 def region_generator(center_point,region_size,clipping_min_max=None,C_style_iterator=False,as_np_array=False):
     '''
     Creates a squared region generator from a center and region_size half side.\n
-    No checks on input correctness to go brr
+    No checks on input correctness
 
     Params
     -------

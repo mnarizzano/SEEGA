@@ -1,0 +1,3 @@
+Note: 
+
+This Python implementation of DEETO is based on the code from the official DEETO repository available [here](https://github.com/mnarizzano/DEETO). It has been modified to exclude type hintings and certain language features. This adjustment was necessary because DEETO needs to run on various versions of 3DSlicer, and some of these versions use older distributions of Python that lack support for type hinting. Including type hintings in the code would lead to InterpreterErrors on these older versions.
