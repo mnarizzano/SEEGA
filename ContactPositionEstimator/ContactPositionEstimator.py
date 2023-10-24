@@ -17,6 +17,8 @@ import platform
 import sys
 import math as m
 
+from DeetoS.electrode_trajectory import *
+
 """Uses ScriptedLoadableModule base class, available at:
 https://github.com/Slicer/Slicer/blob/master/Base/Python/slicer/ScriptedLoadableModule.py
 """
@@ -96,6 +98,13 @@ class ContactPositionEstimatorWidget(ScriptedLoadableModuleWidget):
         #### Collapsible button layout
         self.setupFL = qt.QFormLayout(self.setupCB)
 
+        # SELECTS the deeto version between the python and C++ implementation
+        self.useDeetoPython = qt.QCheckBox("Use DEETHON?"+ (" (blocked: 3DSlicer version < 5)" if slicer.app.majorVersion < 5 else ""))
+        self.useDeetoPython.toolTip = "choice between running the C++ implementation of DEETO or the Python one"
+        self.useDeetoPython.enabled = slicer.app.majorVersion >= 5
+        self.useDeetoPython.connect('clicked(bool)', self.hideDeetoExecutablePath)
+        self.setupFL.addRow("DEETO implementation:", self.useDeetoPython)
+
         #### Tool Box for changing deeto Executable
         self.deetoTB = qt.QToolButton()
         self.deetoTB.setText("...")
@@ -132,6 +141,20 @@ class ContactPositionEstimatorWidget(ScriptedLoadableModuleWidget):
         self.configurationReload.setFixedWidth(400)
         self.setupFL.addRow("", self.configurationReload)
 
+        self.useDeetoPython.setChecked(slicer.app.majorVersion >= 5)
+        if slicer.app.majorVersion >= 5:
+            self.hideDeetoExecutablePath()
+
+
+
+    def hideDeetoExecutablePath(self):
+        not_use_deeton = not self.useDeetoPython.isChecked()
+        self.deetoButtonsHBL.setEnabled(not_use_deeton)
+        self.deetoTB.setEnabled(not_use_deeton)
+        #self.deetoLE.setEnabled(not_use_deeton)
+        self.configurationReload.setEnabled(not_use_deeton)
+        
+
 
     def reloadConfiguration(self):
         self.deetoLE.setText(slicer.modules.ContactPositionEstimatorInstance.deetoExecutablePath)
@@ -164,12 +187,12 @@ class ContactPositionEstimatorWidget(ScriptedLoadableModuleWidget):
         #### Connect the fiducial list to the
         self.fiducialCBox.connect('currentNodeChanged(bool)', self.onfiducialCBox)
         #### Update fiducial Push Button
-        self.updateFiducialPB = qt.QPushButton("Update Fiducial")
-        self.updateFiducialPB.toolTip = "Run the algorithm."
-        self.updateFiducialPB.enabled = True
+        #self.updateFiducialPB = qt.QPushButton("Update Fiducial")
+        #self.updateFiducialPB.toolTip = "Run the algorithm."
+        #self.updateFiducialPB.enabled = True
 
-        self.segmentationFL.addRow(self.updateFiducialPB)
-        self.updateFiducialPB.connect('clicked(bool)', self.onfiducialCBox)
+        #self.segmentationFL.addRow(self.updateFiducialPB)
+        #self.updateFiducialPB.connect('clicked(bool)', self.onfiducialCBox)
 
         #### Configure Segmentation - Section
         ### Read from files the list of the modules
@@ -203,7 +226,7 @@ class ContactPositionEstimatorWidget(ScriptedLoadableModuleWidget):
     # def onfiducialCBox(self):
     #  Create dynamically the electrode table, by reading the fiducial list selected, by
     #  (1) Clear old Fiducial Table
-    #  self.clearTableclearTable()  # Eliminate the electrode list
+    #  self.removeChildWidgets()  # Eliminate the electrode list and the following widgets
     #
     #  (2) If the selected fiducial list is not None Do
     #      (a) Read the fiducial list and
@@ -218,17 +241,25 @@ class ContactPositionEstimatorWidget(ScriptedLoadableModuleWidget):
 
     def onfiducialCBox(self):
 
+        if self.fiducialCBox.currentNode() is None:
+            if self.fids is not None:
+                self.removeChildWidgets()
+            return
+        
         self.electrodeList = []
-        self.clearTable()  # Eliminate the electrode list
         operationLog = ""  # error/warning Log string
-        if self.fids is None:
-            if self.fiducialCBox.currentNode() is None:
-                return
-            # (2.a) Read the fiducial list
-            self.fids = self.fiducialCBox.currentNode()
-        else:
-            self.fids = slicer.mrmlScene.GetFirstNodeByClass('vtkMRMLMarkupsFiducialNode')
 
+        self.fids = self.fiducialCBox.currentNode()
+        if re.search(r"_\d$", self.fids.GetName()[-4:]):
+            self.fids.SetName(self.fids.GetName()[:-2])
+
+        # Back compatibility with 4.6.2 (vtk version is different and functions are named differently)
+        if slicer.app.majorVersion < 5:
+            self.fids.GetNumberOfControlPoints = self.fids.GetNumberOfFiducials
+            self.fids.GetNthControlPointSelected = self.fids.GetNthFiducialSelected
+            self.fids.GetNthControlPointLabel = self.fids.GetNthFiducialLabel
+            self.fids.GetNthControlPointPosition = self.fids.GetNthFiducialPosition
+        
         # here we fill electrode list using fiducials
         for i in range(self.fids.GetNumberOfControlPoints()):
             if self.fids.GetNthControlPointSelected(i) == True:
@@ -296,7 +327,22 @@ class ContactPositionEstimatorWidget(ScriptedLoadableModuleWidget):
         self.ctVolumeCB.showChildNodeTypes = False
         self.ctVolumeCB.setMRMLScene(slicer.mrmlScene)
         self.ctVolumeCB.setToolTip("Pick the input to the algorithm.")
-
+        
+        # Adding default
+        found = False
+        for i in range(5):
+            try:
+                defaultVolumeNode = slicer.util.getNode('ct_'+self.fids.GetName().split('_')[0]+(('_'+str(i)) if i > 0 else ''))
+                if defaultVolumeNode:
+                    defaultVolumeNode.SetName('ct_'+self.fids.GetName().split('_')[0])
+                    self.ctVolumeCB.setCurrentNode(defaultVolumeNode)
+                    found = True
+                    break
+            except slicer.util.MRMLNodeNotFoundException as ex:
+                pass
+        if not found:
+            slicer.util.showStatusMessage("Default Volume matched not found")
+    
         self.volumeCtLabel = qt.QLabel("CT Volume")
         self.segmentationFL.addRow(self.volumeCtLabel, self.ctVolumeCB)
         self.countLastSeg=self.countLastSeg+1
@@ -323,22 +369,6 @@ class ContactPositionEstimatorWidget(ScriptedLoadableModuleWidget):
         self.segmentationOnlyVTK.toolTip = "Better if executed after Start Segmentation"
         self.segmentationOnlyVTK.enabled = True
 
-
-        # SPLIT Fiducial Combobox
-#        self.fiducialSplitBox = slicer.qMRMLNodeComboBox()
-#        self.fiducialSplitBox.nodeTypes = (("vtkMRMLMarkupsFiducialNode"), "")
-#        self.fiducialSplitBox.selectNodeUponCreation = False
-#        self.fiducialSplitBox.addEnabled = False
-#        self.fiducialSplitBox.removeEnabled = False
-#        self.fiducialSplitBox.noneEnabled = True
-#        self.fiducialSplitBox.setMRMLScene(slicer.mrmlScene)
-#        self.fiducialSplitBox.setToolTip("Select a fiducial list")
-
-        # SPLIT Fiducials Button
-#        self.splitFiducialPB = qt.QPushButton("Split Fiducial List")
-#        self.splitFiducialPB.toolTip = "Split Fiducial file, one for each electrode"
-#        self.splitFiducialPB.enabled = True
-
         horzGroupLayout = qt.QHBoxLayout()
         horzGroupLayout.addWidget(self.startSegmentationPB)
         horzGroupLayout.addWidget(self.createVTKModels)
@@ -349,11 +379,6 @@ class ContactPositionEstimatorWidget(ScriptedLoadableModuleWidget):
         self.countLastSeg=self.countLastSeg+1
         self.countLastSeg=self.countLastSeg+1
 
-#        self.segmentationFL.addRow("", self.fiducialSplitBox)
-#        self.segmentationFL.addRow("", self.splitFiducialPB)
-
-        # connections
-#        self.splitFiducialPB.connect('clicked(bool)', self.onsplitFiducialClick)
         self.startSegmentationPB.connect('clicked(bool)', self.onstartSegmentationPB)
         self.segmentationOnlyVTK.connect('clicked(bool)', self.onstartSegmentationOnlyVTK)
 
@@ -363,11 +388,11 @@ class ContactPositionEstimatorWidget(ScriptedLoadableModuleWidget):
     def onstartSegmentationOnlyVTK(self):
         slicer.util.showStatusMessage("START GENERATING VTK")
         print("RUN GENERATING ONLY VTK ALGORITHM ")
-        ContactPositionEstimatorLogic().runSegmentation(self.electrodeList, self.ctVolumeCB.currentNode(), \
-                                                        slicer.modules.ContactPositionEstimatorInstance.parentPath, \
-                                                        slicer.modules.ContactPositionEstimatorInstance.deetoExecutablePath, \
-                                                        self.models, self.createVTKModels,
-                                                        self.createElectrodeVTKModels, 1)
+        ContactPositionEstimatorLogic().runSegmentation(self.useDeetoPython.checked, self.electrodeList, self.ctVolumeCB.currentNode(), \
+                                                                   slicer.modules.ContactPositionEstimatorInstance.parentPath, \
+                                                                   slicer.modules.ContactPositionEstimatorInstance.deetoExecutablePath, \
+                                                                   self.models, self.createVTKModels,
+                                                                   self.createElectrodeVTKModels, 1)
         print("END RUN GENERATING ONLY VTK ALGORITHM ")
         slicer.util.showStatusMessage("END GENERATING VTK")
 
@@ -395,10 +420,10 @@ class ContactPositionEstimatorWidget(ScriptedLoadableModuleWidget):
         
         # define exception when one electrode is misplaced
         try:
-            ContactPositionEstimatorLogic().runSegmentation(self.electrodeList, self.ctVolumeCB.currentNode(), \
-                                                        slicer.modules.ContactPositionEstimatorInstance.parentPath, \
-                                                        slicer.modules.ContactPositionEstimatorInstance.deetoExecutablePath, \
-                                                        self.models, self.createVTKModels, self.createElectrodeVTKModels, 0)
+            ContactPositionEstimatorLogic().runSegmentation(self.useDeetoPython.checked, self.electrodeList, self.ctVolumeCB.currentNode(), \
+                                                                       slicer.modules.ContactPositionEstimatorInstance.parentPath, \
+                                                                       slicer.modules.ContactPositionEstimatorInstance.deetoExecutablePath, \
+                                                                       self.models, self.createVTKModels, self.createElectrodeVTKModels, 0)
             print ("END RUN SEGMENTATION ALGORITHM \n")
             slicer.util.showStatusMessage("END SEGMENTATION")
         except IndexError:
@@ -458,43 +483,33 @@ class ContactPositionEstimatorWidget(ScriptedLoadableModuleWidget):
     #######################################################################################
     # clearTable
     #######################################################################################
-    def clearTable(self):
-        if ((len(self.electrodeList) - 1) < 0):
+    def removeChildWidgets(self):
+        if (len(self.electrodeList) == 0):
             return
 
         # delete last row
         self.startSegmentationPB.setParent(None)
         self.startSegmentationPB.deleteLater()
-        self.segmentationFL.takeAt(self.segmentationFL.count())
 
         # delete last two rows (one is the label)
         self.ctVolumeCB.setParent(None)
         self.ctVolumeCB.deleteLater()
         self.volumeCtLabel.setParent(None)
         self.volumeCtLabel.deleteLater()
-        self.segmentationFL.takeAt(self.segmentationFL.count())
-        self.segmentationFL.takeAt(self.segmentationFL.count())
-
-        #self.splitFiducialPB.setParent(None)
-        #self.splitFiducialPB.deleteLater()
-        self.segmentationFL.takeAt(self.segmentationFL.count())
-        #self.fiducialSplitBox.setParent(None)
-        #self.fiducialSplitBox.deleteLater()
-        self.segmentationFL.takeAt(self.segmentationFL.count())
-
-        last = len(self.electrodeList) - 1
         self.createVTKModels.setParent(None)
         self.createVTKModels.deleteLater()
 
-        while last >= 0:
-            self.electrodeList[last].delete()
-            self.electrodeList.remove(self.electrodeList[last])
-            self.segmentationFL.takeAt(self.segmentationFL.count())
-            last = len(self.electrodeList) - 1
+        self.createElectrodeVTKModels.setParent(None)
+        self.createElectrodeVTKModels.deleteLater()
 
-        self.segmentationFL.update()
-        # notify error
-        slicer.util.showStatusMessage("")
+        self.segmentationOnlyVTK.setParent(None)
+        self.segmentationOnlyVTK.deleteLater()
+
+        for i in range(len(self.electrodeList)-1,-1,-1):
+            self.electrodeList[i].delete()
+            self.electrodeList.remove(self.electrodeList[i])
+
+        self.segmentationCB.update()
 
 
 #########################################################################################
@@ -513,7 +528,7 @@ class ContactPositionEstimatorLogic(ScriptedLoadableModuleLogic):
     # we have two button: A. generate fiducial list with/without VTK and B. generate only VTK
     # execMode = 0 is for A while execMode = 1 is for B
     #######################################################################################
-    def runSegmentation(self, elList, volume, parentPath, deetoExe, models, createVTK, electrodeVTK, execMode):
+    def runSegmentation(self, useDeetoPython, elList, volume, parentPath, deetoExe, models, createVTK, electrodeVTK, execMode):
         ### CHECK that both the fiducials and ct volume have been selected
         if (len(elList) == 0):
             # notify error
@@ -535,27 +550,38 @@ class ContactPositionEstimatorLogic(ScriptedLoadableModuleLogic):
         # compute the threshold as the 45% of points not null
         threshold = n_vector[int(n_vector.size * 0.45)]
 
-        ### CREATE A NEW FIDUCIAL LIST CALLED ...... [TODO]
-        #mlogic = slicer.modules.markups.logic()
-        mlogic = slicer.modules.markups.logic().GetDefaultMarkupsDisplayNode()
-
-        ###
-        ### [TODO] Accrocchio, non so come cambiare questi parametri solo
-        ### per il nodo corrente, invece che di default
-        #mlogic.SetDefaultMarkupsDisplayNodeTextScale(1.3)
-        #mlogic.SetDefaultMarkupsDisplayNodeGlyphScale(1.5)
-        #mlogic.SetDefaultMarkupsDisplayNodeColor(0.39, 0.78, 0.78)  # AZZURRO
-        #mlogic.SetDefaultMarkupsDisplayNodeSelectedColor(0.39, 1.0, 0.39)  # VERDONE
-
-        mlogic.SetTextScale(3.0)
-        mlogic.SetGlyphScale(3.0)
-        mlogic.SetColor(0.39, 0.78, 0.78)  # AZZURRO
-        mlogic.SetSelectedColor(0.39, 1.0, 0.39)  # VERDONE
-
         if execMode == 0:
             fidNode = slicer.util.getNode(slicer.modules.markups.logic().AddNewFiducialNode("recon"))
         else:
             fidNode = slicer.modules.ContactPositionEstimatorInstance.fiducialNode
+
+        ### CREATE A NEW FIDUCIAL LIST CALLED ...... [TODO]
+        #mlogic = slicer.modules.markups.logic()
+        #setting aliases for older versions of slicer
+        if slicer.app.majorVersion < 5:
+            mlogic = slicer.modules.markups.logic()
+            mlogic.SetDefaultMarkupsDisplayNodeTextScale(1.3)
+            mlogic.SetDefaultMarkupsDisplayNodeGlyphScale(1.5)
+            mlogic.SetDefaultMarkupsDisplayNodeColor(0.39, 0.78, 0.78) 
+            mlogic.SetDefaultMarkupsDisplayNodeSelectedColor(0.39, 1.0, 0.39)
+            fidNode.AddControlPoint = fidNode.AddFiducial
+            fidNode.SetNthControlPointLabel = fidNode.SetNthFiducialLabel
+            slicer.modules.markups.logic().SetAllControlPointsLocked = slicer.modules.markups.logic().SetAllMarkupsLocked
+        else:
+            mlogic = slicer.modules.markups.logic().GetDefaultMarkupsDisplayNode()
+
+            ###
+            ### [TODO] Accrocchio, non so come cambiare questi parametri solo
+            ### per il nodo corrente, invece che di default
+            #mlogic.SetDefaultMarkupsDisplayNodeTextScale(1.3)
+            #mlogic.SetDefaultMarkupsDisplayNodeGlyphScale(1.5)
+            #mlogic.SetDefaultMarkupsDisplayNodeColor(0.39, 0.78, 0.78)  # AZZURRO
+            #mlogic.SetDefaultMarkupsDisplayNodeSelectedColor(0.39, 1.0, 0.39)  # VERDONE
+
+            mlogic.SetTextScale(3.0)
+            mlogic.SetGlyphScale(3.0)
+            mlogic.SetColor(0.39, 0.78, 0.78)  # AZZURRO
+            mlogic.SetSelectedColor(0.39, 1.0, 0.39)  # VERDONE
 
         # Save the volume as has been modified
         self.tmpVolumeFile = parentPath + "/Tmp/tmp.nii.gz"
@@ -571,34 +597,49 @@ class ContactPositionEstimatorLogic(ScriptedLoadableModuleLogic):
         listF = slicer.modules.ContactPositionEstimatorInstance.listFiducial
         if execMode == 0:
             listF = list()
-
+        
+        if useDeetoPython: 
+            from numpy import array
+            inverseVector = array([-1,-1,1],dtype=float)
+            etc = ElectrodeTrajectoryConstructor(self.tmpVolumeFile,threshold)
+        
+        from time import time
         # For each electrode "e":
         for i in range(len(elList)):
+            
             tFlag = "-l" if (elList[i].tailCheckBox.isChecked() == True) else "-t"
             hFlag = "-h" if (elList[i].headCheckBox.isChecked() == True) else "-e"
-            # Construct the cmdLine to run the segmentation on "e"
 
-            cmdLine = [str(deetoExe), '-s', str(threshold), '-ct', str(self.tmpVolumeFile), \
-                       hFlag, str(-1 * elList[i].entry[0]), str(-1 * elList[i].entry[1]), \
-                       str(elList[i].entry[2]), tFlag, \
-                       str(-1 * elList[i].target[0]), str(-1 * elList[i].target[1]), \
-                       str(elList[i].target[2]), '-m'] + \
-                      list(map(str, models[elList[i].model.currentText][:-1]))
+            if not useDeetoPython:
+                # Construct the cmdLine to run the segmentation on "e"
+                start_time = time()
+                cmdLine = [str(deetoExe), '-s', str(threshold), '-ct', str(self.tmpVolumeFile), \
+                           hFlag, str(-1 * elList[i].entry[0]), str(-1 * elList[i].entry[1]), \
+                           str(elList[i].entry[2]), tFlag, \
+                           str(-1 * elList[i].target[0]), str(-1 * elList[i].target[1]), \
+                           str(elList[i].target[2]), '-m'] + \
+                          list(map(str, models[elList[i].model.currentText][:-1]))
+                print(models[elList[i].model.currentText])
 
-            # RUN the command line cmdLine.
-            # [NOTE] : I have used Popen since subprocess.check_output wont work at the moment
-            # It Looks a problem of returning code from deetoS
-            points = subprocess.Popen(cmdLine, stdout=subprocess.PIPE).communicate()[0].splitlines()
-            # print points
-
-            ### For each of the point returned by deeto we add it to the new markup fiducial
-            name = elList[i].name.text
-
+                # RUN the command line cmdLine.
+                # [NOTE] : I have used Popen since subprocess.check_output wont work at the moment
+                # It Looks a problem of returning code from deetoS
+                points = subprocess.Popen(cmdLine, stdout=subprocess.PIPE).communicate()[0].splitlines()
+                print(points)
+                # print points
+                #print(time()-start_time)
+            else: #TODO find if elList[i].entry and .target refer to entry and target or can be also head and tail 
+                n = models[elList[i].model.currentText]
+                points = etc.compute_electrode_trajectory({hFlag[1]: inverseVector*elList[i].entry,tFlag[1]: inverseVector*elList[i].target},n[1],n[2],n[3:-1]).ravel()
             ### For each electrode we create a line from the start point to the last + 3mm
             ### Look for two points p1 and p3 starting from p1 and p2 (first and last point segmented
             last = len(points) - 1
             p1 = [float(points[0]), float(points[1]), float(points[2])]
             p2 = [float(points[last - 2]), float(points[last - 1]), float(points[last])]
+
+            ### For each of the point returned by deeto we add it to the new markup fiducial
+            name = elList[i].name.text
+
             delta = math.sqrt(
                 math.pow((p1[0] - p2[0]), 2) + math.pow((p1[1] - p2[1]), 2) + math.pow((p1[2] - p2[2]), 2))
             p3 = [0.0, 0.0, 0.0]
@@ -623,7 +664,8 @@ class ContactPositionEstimatorLogic(ScriptedLoadableModuleLogic):
                 if execMode == 0:
                     a = fidNode.AddControlPoint(float(points[p]), float(points[p + 1]), float(points[p + 2]))
                     fidNode.SetNthControlPointLabel(a, name + str((p / 3) + 1))
-                    fidNode.SetNthControlPointDescription(a, elList[i].model.currentText)
+                    if slicer.app.majorVersion >= 5: # there's no fiducial description method in 4.6.x versions of 3DSlicer
+                        fidNode.SetNthControlPointDescription(a, elList[i].model.currentText)
                     listF[len(listF) - 1].append(a)
 
                     # if checkbox generate vtk is checked
@@ -988,3 +1030,4 @@ class Electrode():
     def delete(self):
         self.row.setParent(None)
         self.row.deleteLater()
+
