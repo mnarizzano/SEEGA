@@ -26,7 +26,7 @@ of the command line tool named deeto[2]. deetoS can be downloaded from
 deetoS that can be found in the directory DEETO/deetoS/.
 
 There are two implementations of DEETO, a compiled C++ executable that must be provided by the user,
-otherwise there's the python implementation of DEETO integrated in "electrode_trajectory.py" but requires a version of 3DSlicer greater than 5
+otherwise there's the python implementation of DEETO (named DEETHON )integrated in "electrode_trajectory.py" but requires a version of 3DSlicer greater than 5
 
 ################################################
 #### 1.1 CONFIGURATION UNDER LINUX
@@ -89,10 +89,10 @@ DEETO is divided into two "Collapsible buttons", namely:
 2. DEETO - Segmentation
 
 ################################################
-#### 3.1) DEETO - Configuration
+#### 3.1 DEETO - Configuration
 ################################################
 
-Here it the button to change DEETO implementation and is also possible to change temporarily the deetoS executable path,
+Here it is the button to change DEETO implementation and is also possible to change temporarily the deetoS executable path,
 by using the dialog box "..." . It is an alternative to the 1.2.2
 step, but please notice that this change is temporary, once Slicer is
 restarted it is again setted as in its configuration file.
@@ -106,7 +106,8 @@ restarted it is again setted as in its configuration file.
 In order to segment a set of contacts DEETO follows this procedure:
 
 1. Add a fiducial files to the scene
-2. Add a CT volume to the scene if not already provided (if both are already loaded into Slicer should automatically find the one with the naming convention of the fiducial list and select that, as in the example). WARNING: the volume and the fiducials
+2. Add a CT volume to the scene if not already provided.
+If both are already loaded into Slicer selecting the fiducial tries to find the ct volume looking for the one with the naming convention "ct_X" where X is the first part of the name of fiducial list, as in the example. WARNING: the volume and the fiducials
    must be on the same space
 3. From the Markups Module choose which electrodes you want to
    segment, by selecting/unselecting points in the Markups module
@@ -168,7 +169,7 @@ TODO
 - \<home\>/DEETO.py, : python script for 3D-SLICER
 - \<home\>/DEETO.pyc ... ?
 - \<home\>/Config/   : contains configuration files used by the DEETO.py (deeto.config, electrodes.config)
-- \<home\>/DeetoS/   : contains the deeto-slicer static executables and the python implementation
+- \<home\>/DeetoS/   : contains the deeto-slicer static executables and the deeto python implementation
 - \<home\>/Testing/  : ... ?
 - \<home\>/Tmp/      : it may contains some temporary files used by deeto.   
 
